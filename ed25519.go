@@ -2,7 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Implements an elliptic.Curve interface over the ed25519 curve.
 package ed25519
 
 import (
@@ -34,6 +33,7 @@ func initEd25519Params() {
 	ed25519Params.BitSize = 256
 }
 
+// Ed25519 returns a Curve that implements Ed25519.
 func Ed25519() elliptic.Curve {
 	once.Do(initEd25519Params)
 	return ed25519
