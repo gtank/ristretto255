@@ -129,7 +129,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestDouble(t *testing.T) {
-	c := Ed25519().(ed25519Curve)
+	c := Ed25519()
 	Gx, Gy := c.Params().Gx, c.Params().Gy
 	G2x, G2y := c.Double(Gx, Gy)
 
@@ -137,6 +137,13 @@ func TestDouble(t *testing.T) {
 
 	if Ax.Cmp(G2x) != 0 || Ay.Cmp(G2y) != 0 {
 		t.Errorf("double(B) != B+B")
+	}
+
+	G4x, G4y := c.Double(G2x, G2y)
+	Ax, Ay = c.Add(G2x, G2y, G2x, G2y)
+
+	if Ax.Cmp(G4x) != 0 || Ay.Cmp(G4y) != 0 {
+		t.Errorf("double(2B) != 2B+2B")
 	}
 }
 

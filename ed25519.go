@@ -76,7 +76,6 @@ func (curve ed25519Curve) Add(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
 // TODO We know Z1=1 and Z2=1 here, so mmadd-2008-hwcd-3 (6M + 1S + 1*k + 9add) could apply
 func extendedAdd(out, p1, p2 *edwards25519.ExtendedGroupElement) {
 	var tmp1, tmp2, A, B, C, D, E, F, G, H edwards25519.FieldElement
-
 	edwards25519.FeSub(&tmp1, &p1.Y, &p1.X) // tmp1 <-- Y1-X1
 	edwards25519.FeSub(&tmp2, &p2.Y, &p2.X) // tmp2 <-- Y2-X2
 	edwards25519.FeMul(&A, &tmp1, &tmp2)    // A <-- tmp1*tmp2 = (Y1-X1)*(Y2-X2)
@@ -97,15 +96,47 @@ func extendedAdd(out, p1, p2 *edwards25519.ExtendedGroupElement) {
 	edwards25519.FeMul(&out.Z, &F, &G)      // Z3 <-- F*G
 }
 
-// Double returns 2*(x,y).
-// TODO: cheaper to reimplement? the typed path is aff->proj->completed->proj->aff
+// Double returns 2*(x,y). Because we are always converting from affine, we can
+// use "mdbl-2008-bbjlp" which assumes Z1=1. Reusing some intermediate
+// values, the cost is 3S + 2M + 9*add + 1*a.
 func (curve ed25519Curve) Double(x1, y1 *big.Int) (x, y *big.Int) {
-	var p edwards25519.ProjectiveGroupElement
-	var r edwards25519.CompletedGroupElement
+	var p, q edwards25519.ProjectiveGroupElement
+	var t0, t1 edwards25519.FieldElement
+
 	affineToProjective(&p, x1, y1)
-	p.Double(&r)
-	r.ToProjective(&p)            // 3M
-	return projectiveToAffine(&p) // 1I + 2M
+
+	// C = X1^2, D = Y1^2
+	edwards25519.FeSquare(&t0, &p.X)
+	edwards25519.FeSquare(&t1, &p.Y)
+	edwards25519.FeMul(&p.Z, &p.X, &p.Y)
+
+	// B = (X1+Y1)^2 = X1^2 + Y1^2 + 2*(X*Y)
+	edwards25519.FeAdd(&q.X, &t0, &t1)
+	edwards25519.FeAdd(&q.X, &q.X, &p.Z)
+	edwards25519.FeAdd(&q.X, &q.X, &p.Z)
+
+	// E = a*C where a = -1
+	edwards25519.FeNeg(&q.Z, &t0)
+
+	// F = E + D
+	edwards25519.FeAdd(&p.X, &q.Z, &t1)
+
+	// X3 = (B-C-D)*(F-2)
+	edwards25519.FeSub(&p.Y, &q.X, &t0)
+	edwards25519.FeSub(&p.Y, &p.Y, &t1)
+	edwards25519.FeSub(&p.Z, &p.X, &feTwo)
+	edwards25519.FeMul(&q.X, &p.Y, &p.Z)
+
+	// Y3 = F*(E-D)
+	edwards25519.FeSub(&p.Y, &q.Z, &t1)
+	edwards25519.FeMul(&q.Y, &p.X, &p.Y)
+
+	// Z3 = F^2 - 2*F
+	edwards25519.FeSquare(&q.Z, &p.X)
+	edwards25519.FeSub(&q.Z, &q.Z, &p.X)
+	edwards25519.FeSub(&q.Z, &q.Z, &p.X)
+
+	return projectiveToAffine(&q)
 }
 
 // ScalarMult returns k*(Bx,By) where k is a number in big-endian form.
