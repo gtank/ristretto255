@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	"github.com/gtank/ed25519/internal/edwards25519"
+	"github.com/gtank/ed25519/internal/radix51"
 )
 
 // TEST MATH
@@ -426,5 +427,42 @@ func BenchmarkScalarMult(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		_, _ = ed.ScalarMult(Bx, By, k[:])
+	}
+}
+
+// A is a constant from the Montgomery form of curve25519.
+var radix25A = edwards25519.FieldElement{
+	486662, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+}
+
+var radix51A = radix51.FieldElement{
+	486662, 0, 0, 0, 0,
+}
+
+func BenchmarkFeMul25(b *testing.B) {
+	var h edwards25519.FieldElement
+	for i := 0; i < b.N; i++ {
+		edwards25519.FeMul(&h, &radix25A, &radix25A)
+	}
+}
+
+func BenchmarkFeMul51(b *testing.B) {
+	var h radix51.FieldElement
+	for i := 0; i < b.N; i++ {
+		radix51.FeMul(&h, &radix51A, &radix51A)
+	}
+}
+
+func BenchmarkFeSquare25(b *testing.B) {
+	var h edwards25519.FieldElement
+	for i := 0; i < b.N; i++ {
+		edwards25519.FeSquare(&h, &radix25A)
+	}
+}
+
+func BenchmarkFeSquare51(b *testing.B) {
+	var h radix51.FieldElement
+	for i := 0; i < b.N; i++ {
+		radix51.FeSquare(&h, &radix51A)
 	}
 }
