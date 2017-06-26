@@ -9,8 +9,12 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/gtank/ed25519/internal/edwards25519"
+	"github.com/gtank/ed25519/internal/group"
+	field "github.com/gtank/ed25519/internal/radix51"
 )
+
+var bigZero *big.Int
+var bigOne *big.Int
 
 type ed25519Curve struct {
 	*elliptic.CurveParams
@@ -31,6 +35,8 @@ func initEd25519Params() {
 	ed25519Params.Gx, _ = new(big.Int).SetString("15112221349535400772501151409588531511454012693041857206046113283949847762202", 10)
 	ed25519Params.Gy, _ = new(big.Int).SetString("46316835694926478169428394003475163141307993866256225615783033603165251855960", 10)
 	ed25519Params.BitSize = 256
+	bigZero = big.NewInt(0)
+	bigOne = big.NewInt(1)
 }
 
 // Ed25519 returns a Curve that implements Ed25519.
@@ -45,98 +51,44 @@ func (curve ed25519Curve) Params() *elliptic.CurveParams {
 }
 
 // IsOnCurve reports whether the given (x,y) lies on the curve by checking that
-// -x^2 + y^2 - 1 - dx^2y^2 = 0.
+// -x^2 + y^2 - 1 - dx^2y^2 = 0 (mod p).
 func (curve ed25519Curve) IsOnCurve(x, y *big.Int) bool {
-	lh := new(big.Int).Mul(x, x)   // x^2
-	y2 := new(big.Int).Mul(y, y)   // y^2
-	rh := new(big.Int).Mul(lh, y2) // x^2y^2
-	rh.Mul(rh, curve.B)            // dx^2y^2 with B repurposed as d
-	rh.Add(rh, bigOne)             // 1 + dx^2y^2
-	lh.Neg(lh)                     // -x^2
-	lh.Add(lh, y2)                 // -x^2 + y^2
-	lh.Sub(lh, rh)                 // -x^2 + y^2 - 1 - dx^2y^2
-	lh.Mod(lh, curve.P)            // -x^2 + y^2 - 1 - dx^2y^2 mod p
-	return lh.Cmp(bigZero) == 0
+	var feX, feY, feB field.FieldElement
+	field.FeFromBig(&feX, x)
+	field.FeFromBig(&feY, y)
+	field.FeFromBig(&feB, curve.B)
+
+	var lh, y2, rh field.FieldElement
+	field.FeSquare(&lh, &feX)              // x^2
+	field.FeSquare(&y2, &feY)              // y^2
+	field.FeMul(&rh, &lh, &y2)             // x^2*y^2
+	field.FeMul(&rh, &rh, &feB)            // d*x^2*y^2
+	field.FeAdd(&rh, &rh, &field.FieldOne) // 1 + d*x^2*y^2
+	field.FeNeg(&lh, &lh)                  // -x^2
+	field.FeAdd(&lh, &lh, &y2)             // -x^2 + y^2
+	field.FeSub(&lh, &lh, &rh)             // -x^2 + y^2 - 1 - dx^2y^2
+	field.FeReduce(&lh, &lh)               // mod p
+
+	return field.FeEqual(&lh, &field.FieldZero)
 }
 
 // Add returns the sum of (x1, y1) and (x2, y2).
 func (curve ed25519Curve) Add(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
-	var p1, p2, p3 edwards25519.ExtendedGroupElement
+	var p1, p2 group.ExtendedGroupElement
 
-	affineToExtended(&p1, x1, y1)
-	affineToExtended(&p2, x2, y2)
-	extendedAdd(&p3, &p1, &p2)
+	p1.FromAffine(x1, y1)
+	p2.FromAffine(x2, y2)
 
-	return extendedToAffine(&p3) // 1I + 2M
+	return p2.Add(&p1, &p2).ToAffine()
 }
 
-// The internal edwards25519 package optimizes for a particular sequence of
-// operations, so we reimplement addition (add-2008-hwcd-3) here to avoid the
-// cost of converting between intermediate representations.
-// TODO We know Z1=1 and Z2=1 here, so mmadd-2008-hwcd-3 (6M + 1S + 1*k + 9add) could apply
-func extendedAdd(out, p1, p2 *edwards25519.ExtendedGroupElement) {
-	var tmp1, tmp2, A, B, C, D, E, F, G, H edwards25519.FieldElement
-	edwards25519.FeSub(&tmp1, &p1.Y, &p1.X) // tmp1 <-- Y1-X1
-	edwards25519.FeSub(&tmp2, &p2.Y, &p2.X) // tmp2 <-- Y2-X2
-	edwards25519.FeMul(&A, &tmp1, &tmp2)    // A <-- tmp1*tmp2 = (Y1-X1)*(Y2-X2)
-	edwards25519.FeAdd(&tmp1, &p1.Y, &p1.X) // tmp1 <-- Y1+X1
-	edwards25519.FeAdd(&tmp2, &p2.Y, &p2.X) // tmp2 <-- Y2+X2
-	edwards25519.FeMul(&B, &tmp1, &tmp2)    // B <-- tmp1*tmp2 = (Y1+X1)*(Y2+X2)
-	edwards25519.FeMul(&tmp1, &p1.T, &p2.T) // tmp1 <-- T1*T2
-	edwards25519.FeMul(&C, &tmp1, &d2)      // C <-- tmp1*2d = T1*2d*T2
-	edwards25519.FeMul(&tmp1, &p1.Z, &p2.Z) // tmp1 <-- Z1*Z2
-	edwards25519.FeAdd(&D, &tmp1, &tmp1)    // D <-- tmp1 + tmp1 = 2*Z1*Z2
-	edwards25519.FeSub(&E, &B, &A)          // E <-- B-A
-	edwards25519.FeSub(&F, &D, &C)          // F <-- D-C
-	edwards25519.FeAdd(&G, &D, &C)          // G <-- D+C
-	edwards25519.FeAdd(&H, &B, &A)          // H <-- B+A
-	edwards25519.FeMul(&out.X, &E, &F)      // X3 <-- E*F
-	edwards25519.FeMul(&out.Y, &G, &H)      // Y3 <-- G*H
-	edwards25519.FeMul(&out.T, &E, &H)      // T3 <-- E*H
-	edwards25519.FeMul(&out.Z, &F, &G)      // Z3 <-- F*G
-}
-
-// Double returns 2*(x,y). Because we are always converting from affine, we can
-// use "mdbl-2008-bbjlp" which assumes Z1=1. Reusing some intermediate
-// values, the cost is 3S + 2M + 9*add + 1*a.
+// Double returns 2*(x,y).
 func (curve ed25519Curve) Double(x1, y1 *big.Int) (x, y *big.Int) {
-	var p, q edwards25519.ProjectiveGroupElement
-	var t0, t1 edwards25519.FieldElement
+	var p group.ProjectiveGroupElement
 
-	affineToProjective(&p, x1, y1)
+	p.FromAffine(x1, y1)
 
-	// C = X1^2, D = Y1^2
-	edwards25519.FeSquare(&t0, &p.X)
-	edwards25519.FeSquare(&t1, &p.Y)
-	edwards25519.FeMul(&p.Z, &p.X, &p.Y)
-
-	// B = (X1+Y1)^2 = X1^2 + Y1^2 + 2*(X*Y)
-	edwards25519.FeAdd(&q.X, &t0, &t1)
-	edwards25519.FeAdd(&q.X, &q.X, &p.Z)
-	edwards25519.FeAdd(&q.X, &q.X, &p.Z)
-
-	// E = a*C where a = -1
-	edwards25519.FeNeg(&q.Z, &t0)
-
-	// F = E + D
-	edwards25519.FeAdd(&p.X, &q.Z, &t1)
-
-	// X3 = (B-C-D)*(F-2)
-	edwards25519.FeSub(&p.Y, &q.X, &t0)
-	edwards25519.FeSub(&p.Y, &p.Y, &t1)
-	edwards25519.FeSub(&p.Z, &p.X, &feTwo)
-	edwards25519.FeMul(&q.X, &p.Y, &p.Z)
-
-	// Y3 = F*(E-D)
-	edwards25519.FeSub(&p.Y, &q.Z, &t1)
-	edwards25519.FeMul(&q.Y, &p.X, &p.Y)
-
-	// Z3 = F^2 - 2*F
-	edwards25519.FeSquare(&q.Z, &p.X)
-	edwards25519.FeSub(&q.Z, &q.Z, &p.X)
-	edwards25519.FeSub(&q.Z, &q.Z, &p.X)
-
-	return projectiveToAffine(&q)
+	return p.Double().ToAffine()
 }
 
 // ScalarMult returns k*(Bx,By) where k is a number in big-endian form.
@@ -148,8 +100,7 @@ func (curve ed25519Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) 
 		return
 	}
 
-	var r0, r1 edwards25519.ExtendedGroupElement
-	var h edwards25519.CompletedGroupElement
+	var r0, r1 group.ExtendedGroupElement
 	var s [32]byte
 
 	curve.scalarFromBytes(&s, k)
@@ -157,7 +108,7 @@ func (curve ed25519Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) 
 	// Montgomery ladder init:
 	// R_0 = O, R_1 = P
 	r0.Zero()
-	affineToExtended(&r1, x1, y1)
+	r1.FromAffine(x1, y1)
 
 	// Montgomery ladder step:
 	// R_{1-b} = R_{1-b} + R_{b}
@@ -165,17 +116,15 @@ func (curve ed25519Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) 
 	for i := 255; i >= 0; i-- {
 		var b = int32((s[i/8] >> uint(i&7)) & 1)
 		if b == 0 {
-			extendedAdd(&r1, &r0, &r1)
-			r0.Double(&h)
-			h.ToExtended(&r0)
+			r1.Add(&r0, &r1)
+			r0.Double()
 		} else {
-			extendedAdd(&r0, &r0, &r1)
-			r1.Double(&h)
-			h.ToExtended(&r1)
+			r0.Add(&r0, &r1)
+			r1.Double()
 		}
 	}
 
-	return extendedToAffine(&r0)
+	return r0.ToAffine()
 }
 
 // scalarFromBytes converts a big-endian value to a fixed-size little-endian
@@ -194,84 +143,13 @@ func (curve ed25519Curve) scalarFromBytes(out *[32]byte, in []byte) {
 	}
 }
 
-// ScalarBaseMult returns k*G, where G is the base point of the group and k is
-// an integer in big-endian form.
-func (curve ed25519Curve) ScalarBaseMult(k []byte) (x, y *big.Int) {
-	var p edwards25519.ExtendedGroupElement
-	var scBytes [32]byte
+// // ScalarBaseMult returns k*G, where G is the base point of the group and k is
+// // an integer in big-endian form.
+// func (curve ed25519Curve) ScalarBaseMult(k []byte) (x, y *big.Int) {
+// 	var p edwards25519.ExtendedGroupElement
+// 	var scBytes [32]byte
 
-	curve.scalarFromBytes(&scBytes, k)
-	edwards25519.GeScalarMultBase(&p, &scBytes)
-	return extendedToAffine(&p)
-}
-
-// Converts (x,y) to (X:Y:T:Z) extended coordinates, or "P3" in ref10. As
-// described in "Twisted Edwards Curves Revisited", Hisil-Wong-Carter-Dawson
-// 2008, Section 3.1 (https://eprint.iacr.org/2008/522.pdf)
-// See also https://hyperelliptic.org/EFD/g1p/auto-twisted-extended-1.html#addition-add-2008-hwcd-3
-func affineToExtended(out *edwards25519.ExtendedGroupElement, x, y *big.Int) {
-	feFromBig(&out.X, x)
-	feFromBig(&out.Y, y)
-	edwards25519.FeMul(&out.T, &out.X, &out.Y)
-	edwards25519.FeOne(&out.Z)
-}
-
-// Extended coordinates are XYZT with x = X/Z, y = Y/Z, or the "P3"
-// representation in ref10. Extended->affine is the same operation as moving
-// from projective to affine. Per HWCD, it is safe to move from extended to
-// projective by simply ignoring T.
-func extendedToAffine(in *edwards25519.ExtendedGroupElement) (*big.Int, *big.Int) {
-	var x, y, zinv edwards25519.FieldElement
-	var bigX, bigY = new(big.Int), new(big.Int)
-
-	edwards25519.FeInvert(&zinv, &in.Z)
-	edwards25519.FeMul(&x, &in.X, &zinv)
-	edwards25519.FeMul(&y, &in.Y, &zinv)
-
-	feToBig(bigX, &x)
-	feToBig(bigY, &y)
-
-	return bigX, bigY
-}
-
-// Projective coordinates are XYZ with x = X/Z, y = Y/Z, or the "P2" representation in ref10.
-func affineToProjective(out *edwards25519.ProjectiveGroupElement, x, y *big.Int) {
-	feFromBig(&out.X, x)
-	feFromBig(&out.Y, y)
-	edwards25519.FeOne(&out.Z)
-}
-
-func projectiveToAffine(in *edwards25519.ProjectiveGroupElement) (*big.Int, *big.Int) {
-	var x, y, zinv edwards25519.FieldElement
-	var bigX, bigY = new(big.Int), new(big.Int)
-
-	edwards25519.FeInvert(&zinv, &in.Z)
-	edwards25519.FeMul(&x, &in.X, &zinv)
-	edwards25519.FeMul(&y, &in.Y, &zinv)
-
-	feToBig(bigX, &x)
-	feToBig(bigY, &y)
-
-	return bigX, bigY
-}
-
-func feFromBig(h *edwards25519.FieldElement, in *big.Int) {
-	tmp := new(big.Int).Mod(in, ed25519.P)
-	tmpBytes := tmp.Bytes()
-	var buf, reverse [32]byte
-	copy(buf[32-len(tmpBytes):], tmpBytes)
-	for i := 0; i < 32; i++ {
-		reverse[i] = buf[31-i]
-	}
-	edwards25519.FeFromBytes(h, &reverse)
-}
-
-func feToBig(out *big.Int, h *edwards25519.FieldElement) {
-	var buf, reverse [32]byte
-	edwards25519.FeToBytes(&buf, h)
-	for i := 0; i < 32; i++ {
-		reverse[i] = buf[31-i]
-	}
-	out.SetBytes(reverse[:])
-	out.Mod(out, ed25519.P)
-}
+// 	curve.scalarFromBytes(&scBytes, k)
+// 	edwards25519.GeScalarMultBase(&p, &scBytes)
+// 	return extendedToAffine(&p)
+// }
