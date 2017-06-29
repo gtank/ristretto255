@@ -357,39 +357,30 @@ func BenchmarkDouble(b *testing.B) {
 // 	}
 // }
 
-// // A is a constant from the Montgomery form of curve25519.
-// var radix25A = edwards25519.FieldElement{
-// 	486662, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-// }
+var radix51A = field.FieldElement{
+	486662, 0, 0, 0, 0,
+}
 
-// var radix51A = radix51.FieldElement{
-// 	486662, 0, 0, 0, 0,
-// }
+func BenchmarkFeMul51(b *testing.B) {
+	var h field.FieldElement
+	for i := 0; i < b.N; i++ {
+		field.FeMul(&h, &radix51A, &radix51A)
+	}
+}
 
-// func BenchmarkFeMul25(b *testing.B) {
-// 	var h edwards25519.FieldElement
-// 	for i := 0; i < b.N; i++ {
-// 		edwards25519.FeMul(&h, &radix25A, &radix25A)
-// 	}
-// }
+func BenchmarkFeSquare51(b *testing.B) {
+	var h field.FieldElement
+	for i := 0; i < b.N; i++ {
+		field.FeSquare(&h, &radix51A)
+	}
+}
 
-// func BenchmarkFeMul51(b *testing.B) {
-// 	var h radix51.FieldElement
-// 	for i := 0; i < b.N; i++ {
-// 		radix51.FeMul(&h, &radix51A, &radix51A)
-// 	}
-// }
+var concreteCurve = Ed25519().(ed25519Curve)
+var randFieldInt, _ = rand.Int(rand.Reader, concreteCurve.P)
 
-// func BenchmarkFeSquare25(b *testing.B) {
-// 	var h edwards25519.FieldElement
-// 	for i := 0; i < b.N; i++ {
-// 		edwards25519.FeSquare(&h, &radix25A)
-// 	}
-// }
-
-// func BenchmarkFeSquare51(b *testing.B) {
-// 	var h radix51.FieldElement
-// 	for i := 0; i < b.N; i++ {
-// 		radix51.FeSquare(&h, &radix51A)
-// 	}
-// }
+func BenchmarkFeFromBig(b *testing.B) {
+	var fe field.FieldElement
+	for i := 0; i < b.N; i++ {
+		field.FeFromBig(&fe, randFieldInt)
+	}
+}

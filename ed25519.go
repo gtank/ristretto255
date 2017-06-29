@@ -88,7 +88,7 @@ func (curve ed25519Curve) Double(x1, y1 *big.Int) (x, y *big.Int) {
 
 	p.FromAffine(x1, y1)
 
-	return p.Double().ToAffine()
+	return p.DoubleZ1().ToAffine()
 }
 
 // ScalarMult returns k*(Bx,By) where k is a number in big-endian form.
