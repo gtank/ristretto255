@@ -51,18 +51,18 @@ func (curve ed25519Curve) Params() *elliptic.CurveParams {
 }
 
 // IsOnCurve reports whether the given (x,y) lies on the curve by checking that
-// -x^2 + y^2 - 1 - dx^2y^2 = 0 (mod p).
+// -x^2 + y^2 - 1 - dx^2y^2 = 0 (mod p). This function uses a hardcoded value
+// of d.
 func (curve ed25519Curve) IsOnCurve(x, y *big.Int) bool {
-	var feX, feY, feB field.FieldElement
+	var feX, feY field.FieldElement
 	field.FeFromBig(&feX, x)
 	field.FeFromBig(&feY, y)
-	field.FeFromBig(&feB, curve.B)
 
 	var lh, y2, rh field.FieldElement
 	field.FeSquare(&lh, &feX)              // x^2
 	field.FeSquare(&y2, &feY)              // y^2
 	field.FeMul(&rh, &lh, &y2)             // x^2*y^2
-	field.FeMul(&rh, &rh, &feB)            // d*x^2*y^2
+	field.FeMul(&rh, &rh, &group.D)        // d*x^2*y^2
 	field.FeAdd(&rh, &rh, &field.FieldOne) // 1 + d*x^2*y^2
 	field.FeNeg(&lh, &lh)                  // -x^2
 	field.FeAdd(&lh, &lh, &y2)             // -x^2 + y^2
