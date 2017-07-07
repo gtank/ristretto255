@@ -398,3 +398,13 @@ func BenchmarkFeFromBig(b *testing.B) {
 		field.FeFromBig(&fe, randFieldInt)
 	}
 }
+
+var feOnes field.FieldElement = [5]uint64{1, 1, 1, 1, 1}
+
+//func FeToBig(h *FieldElement) *big.Int {
+func BenchmarkFeToBig(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		_ = field.FeToBig(&feOnes)
+	}
+
+}
