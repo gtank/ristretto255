@@ -116,6 +116,23 @@ func TestScalarMult(t *testing.T) {
 	if twoX.Cmp(xPlusX) != 0 || twoY.Cmp(yPlusY) != 0 {
 		t.Errorf("2*B != B+B")
 	}
+
+	// TODO: fuzz like it's going out of style
+	if !testing.Short() {
+		buf := make([]byte, 32)
+		for i := 0; i < 1000; i++ {
+			_, err := io.ReadFull(rand.Reader, buf)
+			if err != nil {
+				t.Fatal(err)
+			}
+			randX, randY := ed.ScalarMult(x, y, buf)
+
+			if !ed.IsOnCurve(randX, randY) {
+				t.Errorf("scalarMult return off-curve point for scalar %x", buf)
+			}
+		}
+	}
+
 }
 
 func BenchmarkScalarMult(b *testing.B) {
@@ -406,5 +423,4 @@ func BenchmarkFeToBig(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = field.FeToBig(&feOnes)
 	}
-
 }
