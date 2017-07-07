@@ -88,6 +88,7 @@ func (curve ed25519Curve) Double(x1, y1 *big.Int) (x, y *big.Int) {
 
 	p.FromAffine(x1, y1)
 
+	// Use the special-case DoubleZ1 here because we know Z will be 1.
 	return p.DoubleZ1().ToAffine()
 }
 
