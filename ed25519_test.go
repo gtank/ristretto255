@@ -6,6 +6,7 @@ package ed25519
 
 import (
 	"crypto/rand"
+	"io"
 	"math/big"
 	"testing"
 
@@ -98,6 +99,37 @@ func BenchmarkDouble(b *testing.B) {
 	Gx, Gy := c.Params().Gx, c.Params().Gy
 	for i := 0; i < b.N; i++ {
 		Gx, Gy = c.Double(Gx, Gy)
+	}
+}
+
+func TestScalarMult(t *testing.T) {
+	ed := Ed25519()
+	x, y := ed.Params().Gx, ed.Params().Gy
+
+	twoX, twoY := ed.ScalarMult(x, y, big.NewInt(2).Bytes())
+	xPlusX, yPlusY := ed.Add(x, y, x, y)
+
+	if !ed.IsOnCurve(twoX, twoY) {
+		t.Error("2*B is not on the curve")
+	}
+
+	if twoX.Cmp(xPlusX) != 0 || twoY.Cmp(yPlusY) != 0 {
+		t.Errorf("2*B != B+B")
+	}
+}
+
+func BenchmarkScalarMult(b *testing.B) {
+	ed := Ed25519()
+	Bx, By := ed.Params().Gx, ed.Params().Gy
+
+	var k [32]byte
+	_, err := io.ReadFull(rand.Reader, k[:])
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	for i := 0; i < b.N; i++ {
+		_, _ = ed.ScalarMult(Bx, By, k[:])
 	}
 }
 
@@ -336,24 +368,6 @@ func BenchmarkDouble(b *testing.B) {
 
 // 	for i := 0; i < b.N; i++ {
 // 		_, _ = ed.ScalarBaseMult(k[:])
-// 	}
-// }
-
-// func BenchmarkScalarMult(b *testing.B) {
-// 	ed := Ed25519()
-// 	Bx, By := ed.Params().Gx, ed.Params().Gy
-
-// 	var k [32]byte
-// 	_, err := io.ReadFull(rand.Reader, k[:])
-// 	if err != nil {
-// 		b.Fatal(err)
-// 	}
-// 	k[0] &= 248
-// 	k[31] &= 127
-// 	k[31] |= 64
-
-// 	for i := 0; i < b.N; i++ {
-// 		_, _ = ed.ScalarMult(Bx, By, k[:])
 // 	}
 // }
 
