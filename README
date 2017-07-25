@@ -1,0 +1,11 @@
+This is foremost an implementation of the curve Ed25519 that satisfies Go's
+elliptic.Curve interface. It targets amd64 systems, and is eventually intended
+to be a legible general-purpose library along the lines of curve25519-dalek.
+
+It is also an implementation of GF(2^255-19) field operations in a 64-bit
+representation, in both pure Go and plan9 assembly for amd64. This code is
+currently package-internal.
+
+The library is a WORK IN PROGRESS. Everything will change dramatically as
+development continues. There are no guarantees of stability, functionality,
+correctness, or safety. We aren't open yet, come back later!

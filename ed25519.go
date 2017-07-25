@@ -94,7 +94,7 @@ func (curve ed25519Curve) Double(x1, y1 *big.Int) (x, y *big.Int) {
 
 // ScalarMult returns k*(Bx,By) where k is a number in big-endian form.
 func (curve ed25519Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
-	// if either coordinate is nil, return the point at infinity
+	// if either coordinate is nil, return the identity point
 	if x1 == nil || y1 == nil {
 		x = new(big.Int).Set(bigZero)
 		y = new(big.Int).Set(bigOne)
@@ -144,13 +144,10 @@ func (curve ed25519Curve) scalarFromBytes(out *[32]byte, in []byte) {
 	}
 }
 
-// // ScalarBaseMult returns k*G, where G is the base point of the group and k is
-// // an integer in big-endian form.
-// func (curve ed25519Curve) ScalarBaseMult(k []byte) (x, y *big.Int) {
-// 	var p edwards25519.ExtendedGroupElement
-// 	var scBytes [32]byte
-
-// 	curve.scalarFromBytes(&scBytes, k)
-// 	edwards25519.GeScalarMultBase(&p, &scBytes)
-// 	return extendedToAffine(&p)
-// }
+// ScalarBaseMult returns k*G, where G is the base point of the curve and k is
+// an integer in big-endian form. The difference between this and
+// arbitrary-point ScalarMult is the availability of precomputed multiples of
+// the base point.
+func (curve ed25519Curve) ScalarBaseMult(k []byte) (x, y *big.Int) {
+	panic("not yet implemented")
+}

@@ -369,24 +369,7 @@ func BenchmarkScalarMult(b *testing.B) {
 // 	}
 // }
 
-// // BENCHMARKS
-
-// func BenchmarkScalarBaseMult(b *testing.B) {
-// 	ed := Ed25519()
-
-// 	var k [32]byte
-// 	_, err := io.ReadFull(rand.Reader, k[:])
-// 	if err != nil {
-// 		b.Fatal(err)
-// 	}
-// 	k[0] &= 248
-// 	k[31] &= 127
-// 	k[31] |= 64
-
-// 	for i := 0; i < b.N; i++ {
-// 		_, _ = ed.ScalarBaseMult(k[:])
-// 	}
-// }
+// COMPARATIVE FIELD BENCHMARKS
 
 var radix51A = field.FieldElement{
 	486662, 0, 0, 0, 0,
@@ -418,7 +401,6 @@ func BenchmarkFeFromBig(b *testing.B) {
 
 var feOnes field.FieldElement = [5]uint64{1, 1, 1, 1, 1}
 
-//func FeToBig(h *FieldElement) *big.Int {
 func BenchmarkFeToBig(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		_ = field.FeToBig(&feOnes)
