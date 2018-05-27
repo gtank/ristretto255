@@ -7,6 +7,7 @@ package radix51
 import (
 	"bytes"
 	"crypto/rand"
+	"fmt"
 	"io"
 	"testing"
 	"unsafe"
@@ -191,4 +192,14 @@ func TestFeInvert(t *testing.T) {
 	if !vartimeEqual(one, r) {
 		t.Errorf("random inversion identity failed, got: %x for field element %x", r, x)
 	}
+}
+
+func TestFeMulADX(t *testing.T) {
+	var x FieldElement = [5]uint64{0, 0, 0, 0, 0}
+	x[0] = 0x4e645be9215a2
+	var y FieldElement = [5]uint64{268435456, 0, 0, 0, 0}
+	var z FieldElement
+
+	FeMulADX(&z, &x, &y)
+	fmt.Printf("%v\n", z)
 }

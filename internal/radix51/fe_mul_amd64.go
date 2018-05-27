@@ -8,3 +8,6 @@ package radix51
 
 // go:noescape
 func FeMul(out, a, b *FieldElement)
+
+// go:noescape
+func FeMulADX(out, a, b *FieldElement)
