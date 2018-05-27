@@ -10,4 +10,4 @@ package radix51
 func FeMul(out, a, b *FieldElement)
 
 // go:noescape
-func FeMulADX(out, a, b *FieldElement)
+func FeMulADX(out *[10]uint64, a, b *FieldElement)
