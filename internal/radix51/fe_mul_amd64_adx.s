@@ -13,7 +13,7 @@ TEXT ·FeMulADX(SB),NOSPLIT,$0
 	MOVQ yp+16(FP), BP
 
 	// The first diagonal sets up the accumulators.
-	XORQ AX,AX
+	XORQ AX, AX
 
 	MOVQ 0(BP), DX // rdx <-- y0
 	MULXQ 0(SI), R8, R9 // r0 <-- x0*y0
@@ -111,7 +111,7 @@ TEXT ·FeMulADX(SB),NOSPLIT,$0
 	MULXQ 24(SI), R10, R11 // r6 <-- x3*y3
 	ADCXQ R9, R10
 	ADOXQ 48(DI), R10
-	MULXQ 32(SI), R12, R13 //r7 <-- x4*y3
+	MULXQ 32(SI), R12, R13 // r7 <-- x4*y3
 	ADCXQ R11, R12
 	ADOXQ 56(DI), R12
 
