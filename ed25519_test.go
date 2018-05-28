@@ -382,6 +382,13 @@ func BenchmarkFeMul51(b *testing.B) {
 	}
 }
 
+func BenchmarkFeMulADX(b *testing.B) {
+	var h [10]uint64
+	for i := 0; i < b.N; i++ {
+		field.FeMulADX(&h, &radix51A, &radix51A)
+	}
+}
+
 func BenchmarkFeSquare51(b *testing.B) {
 	var h field.FieldElement
 	for i := 0; i < b.N; i++ {
