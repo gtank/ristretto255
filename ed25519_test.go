@@ -377,6 +377,7 @@ var radix51A = field.FieldElement{
 
 func BenchmarkFeMul51(b *testing.B) {
 	var h field.FieldElement
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		field.FeMul(&h, &radix51A, &radix51A)
 	}
@@ -384,6 +385,7 @@ func BenchmarkFeMul51(b *testing.B) {
 
 func BenchmarkFeMulADX(b *testing.B) {
 	var h [10]uint64
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		field.FeMulADX(&h, &radix51A, &radix51A)
 	}

@@ -195,9 +195,8 @@ func TestFeInvert(t *testing.T) {
 }
 
 func TestFeMulADX(t *testing.T) {
-	var x FieldElement = [5]uint64{1, 0, 0, 1, 16384}
-	// x[0] = 0x4e645be9215a2
-	var y FieldElement = [5]uint64{16384, 16384, 16384, 16384, 16384}
+	var x FieldElement = [5]uint64{140194305, 1, 2955487002624, 1, 2955487002624}
+	var y FieldElement = [5]uint64{16384, 16384, 16384, 16384, 2955487002624}
 	var z [10]uint64
 
 	FeMulADX(&z, &x, &y)
