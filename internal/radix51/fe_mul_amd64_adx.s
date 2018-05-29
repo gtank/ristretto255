@@ -13,59 +13,86 @@ TEXT ·FeMulADX(SB),NOSPLIT,$0
 	MOVQ yp+16(FP), BP
 
 	// The first diagonal sets up the accumulators.
-	XORQ AX, AX
 
-	MOVQ 0(BP), DX // rdx <-- y0
-	MULXQ 0(SI), R8, R9 // r0 <-- x0*y0
-	MOVQ R8, 0(DI)
-	MULXQ 8(SI), R10, R11 // r1 <-- x1*y0
+	XORQ AX, AX // clear flags & zero AX
+
+	MOVQ 0(BP), DX         // dx <-- y0
+	MULXQ 0(SI), R8, R9    // r0 <-- x0*y0
+	MULXQ 8(SI), R10, R11  // r1 <-- x1*y0
 	ADDQ R9, R10
 	MULXQ 16(SI), R12, R13 // r2 <-- x2*y0
 	ADCQ R11, R12
 	MULXQ 24(SI), R14, R15 // r3 <-- x3*y0
 	ADCQ R13, R14
-	MULXQ 32(SI), BX, CX // r4 <-- x4*y0
+	MULXQ 32(SI), BX, CX   // r4 <-- x4*y0
 	ADCQ R15, BX
 
 	// Consolidate carry chain into r5
-	ADCQ CX, 40(DI)
+	ADCQ $0, CX
 
-	MOVQ R10, 8(DI)
-	MOVQ R12, 16(DI)
-	MOVQ R14, 24(DI)
-	MOVQ BX, 32(DI)
+	// Store r0 accumulator in output memory
+	MOVQ R8, 0(DI)
 
-	XORQ AX, AX // clear flags
+	// R8, R9, R11, R13, R15 are reusable immediately. This allows us to add
+	// the remaining unstored initial accumulators R10, R12, R14, BX, CX to
+	// some of the next partial products without wasting load/store cycles.
+	//
+	// Hereafter we are maintaining two parallel carries, reusing registers as
+	// soon as their contents have propagated up the relevant chain.
+	//
+	// ADCXQ is the chain up through each row of consecutive products.
+	// ADCOX is the result-register chain.
 
-	MOVQ 8(BP), DX // rdx <-- y1
-	MULXQ 0(SI), R10, R11 // r1 <-- x0*y1
-	ADOXQ 8(DI), R10
-	MOVQ R10, 8(DI)
-	MULXQ 8(SI), R12, R13 // r2 <-- x1*y1
-	ADCXQ R11, R12
-	ADOXQ 16(DI), R12
-	MULXQ 16(SI), R14, R15 // r3 <-- x2*y1
-	ADCXQ R13, R14
-	ADOXQ 24(DI), R14
-	MULXQ 24(SI), BX, CX // r4 <-- x3*y1
-	ADCXQ R15, BX
-	ADOXQ 32(DI), BX
-	MULXQ 32(SI), R8, R9 // r5 <-- x4*y1
-	ADCXQ CX, R8
-	ADOXQ 40(DI), R8
+	XORQ AX, AX // clear flags & zero AX
 
-	// Consolidate both carry chains into r6
-	ADCXQ AX, R9
-	ADOXQ AX, R9
-	MOVQ R9, 48(DI)
+	MOVQ 8(BP), DX // dx <-- y1
 
-	// Update accumulators
-	MOVQ R12, 16(DI)
-	MOVQ R14, 24(DI)
-	MOVQ BX, 32(DI)
-	MOVQ R8, 40(DI)
+	MULXQ 0(SI), R8, R9 // r1 <-- x0*y1
+	// No CF chain yet
+	ADOXQ R10, R8 // here R10 is the prior accumulator for r1
+	MOVQ R8, 8(DI)
 
-	XORQ AX, AX // clear flags
+	// Now R10, R11, R13, R15 are usable
+
+	MULXQ 8(SI), R10, R11 // r2 <-- x1*y1
+	ADCXQ R9, R10  // R9 is the carry from last product
+	ADOXQ R12, R10 // R12 is the prior accumulator for r2
+	MOVQ R10, 16(DI)
+
+	// Now R9, R12, R13, R15 are usable
+
+	MULXQ 16(SI), R9, R12 // r3 <-- x2*y1
+	ADCXQ R11, R9 // R11 is the carry from last product
+	ADOXQ R14, R9 // R14 is the prior accumulator for r3
+	MOVQ R9, 24(DI)
+
+	// Now R11, R14, R13, R15 are usable
+
+	MULXQ 24(SI), R11, R14 // r4 <-- x3*y1
+	ADCXQ R12, R11 // R12 is the carry from last product
+	ADOXQ BX, R11 // BX is the prior accumulator for r4
+	MOVQ R11, 32(DI)
+
+	// Now R12, R13, R15, BX are usable
+
+	// r5 has a carry in from the overflow of the first diagonal
+
+	MULXQ 32(SI), R12, R13 // r5 <-- x4*y1
+	ADCXQ R14, R12 // R14 is the carry from last product
+	ADOXQ CX, R12 // CX is the prior accumulator for r5
+	MOVQ R12, 40(DI)
+
+	// Now R14, R15, BX, CX are usable
+
+	// Consolidate both carry chains into r6. AX is zero.
+	ADCXQ AX, R13
+	ADOXQ AX, R13
+	MOVQ R13, 48(DI)
+
+	// TODO continue propagating like that. should only have to do one store
+	// operation per row?
+
+	XORQ AX, AX // clear flags & zero AX
 
 	MOVQ 16(BP), DX // rdx <-- y2
 	MULXQ 0(SI), R12, R13 // r2 <-- x0*y2
@@ -144,7 +171,7 @@ TEXT ·FeMulADX(SB),NOSPLIT,$0
 	ADCXQ R13, R14
 	ADOXQ 64(DI), R14
 
-	// Consolidate both carry chains in R15, our final output.
+	// Consolidate both carry chains in r9, our final output.
 	ADCXQ AX, R15
 	ADOXQ AX, R15
 	MOVQ R15, 72(DI)
