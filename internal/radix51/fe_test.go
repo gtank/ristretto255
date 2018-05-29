@@ -200,5 +200,14 @@ func TestFeMulADX(t *testing.T) {
 	var z [10]uint64
 
 	FeMulADX(&z, &x, &y)
-	fmt.Printf("%v\n", z)
+
+	expect := [10]uint64{2296943493120, 2296943509504, 48424995994501120, 48424995994517504, 8610922045896736768, 96848353589002262, 1217319147952685056, 48425654538467760, 1168896448901677056, 473520}
+
+	for i := 0; i < len(expect); i++ {
+		if z[i] != expect[i] {
+			t.Errorf("wrong")
+			fmt.Printf("%v\n", z)
+			break
+		}
+	}
 }
