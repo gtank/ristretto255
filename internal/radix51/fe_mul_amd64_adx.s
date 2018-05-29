@@ -28,8 +28,7 @@ TEXT ·FeMulADX(SB),NOSPLIT,$0
 	ADCQ R15, BX
 
 	// Consolidate carry chain into r5
-	ADCQ AX, CX
-	MOVQ CX, 40(DI)
+	ADCQ CX, 40(DI)
 
 	MOVQ R10, 8(DI)
 	MOVQ R12, 16(DI)
