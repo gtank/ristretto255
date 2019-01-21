@@ -31,3 +31,13 @@ func (e *Element) Equal(ee *Element) int {
 
 	return out
 }
+
+// FromUniformBytes maps the 64-byte slice b to an Element e uniformly and
+// deterministically. This can be used for hash-to-group operations or to obtain
+// a random element.
+func (e *Element) FromUniformBytes(b []byte) {
+	if len(b) != 64 {
+		panic("ristretto255: FromUniformBytes called with a byte slice of length different than 64")
+	}
+
+}
