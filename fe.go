@@ -3,59 +3,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package edwards25519
+package ristretto255
 
 import (
-	"crypto/subtle"
+	"math/big"
 
-	"github.com/gtank/ristretto255/internal/edwards25519/internal/radix51"
+	. "github.com/gtank/ristretto255/internal/radix51"
 )
-
-// FeEqual returns 1 if a and b are equal, and 0 otherwise.
-func FeEqual(a, b *FieldElement) int {
-	var sa, sb [32]byte
-	radix51.FeToBytes(&sa, a)
-	radix51.FeToBytes(&sb, b)
-	return subtle.ConstantTimeCompare(sa[:], sb[:])
-}
-
-// FeSelect sets out to v if cond == 1, and to u if cond == 0.
-// out, v and u are allowed to overlap.
-func FeSelect(out, v, u *FieldElement, cond int) {
-	b := uint64(cond) * 0xffffffffffffffff
-	out[0] = (b & v[0]) | (^b & u[0])
-	out[1] = (b & v[1]) | (^b & u[1])
-	out[2] = (b & v[2]) | (^b & u[2])
-	out[3] = (b & v[3]) | (^b & u[3])
-	out[4] = (b & v[4]) | (^b & u[4])
-}
-
-// FeCondNeg sets u to -u if cond == 1, and to u if cond == 0.
-func FeCondNeg(u *FieldElement, cond int) {
-	var neg FieldElement
-	FeNeg(&neg, u)
-
-	b := uint64(cond) * 0xffffffffffffffff
-	u[0] ^= b & (u[0] ^ neg[0])
-	u[1] ^= b & (u[1] ^ neg[1])
-	u[2] ^= b & (u[2] ^ neg[2])
-	u[3] ^= b & (u[3] ^ neg[3])
-	u[4] ^= b & (u[4] ^ neg[4])
-}
-
-// FeIsNegative returns 1 if u is negative, and 0 otherwise.
-func FeIsNegative(u *FieldElement) int {
-	var b [32]byte
-	radix51.FeToBytes(&b, u)
-	return int(b[0] & 1)
-}
-
-// FeAbs sets out to |u|. out and u are allowed to overlap.
-func FeAbs(out, u *FieldElement) {
-	var neg FieldElement
-	FeNeg(&neg, u)
-	FeSelect(out, &neg, u, FeIsNegative(u))
-}
 
 // fePow22523 is from x/crypto/ed25519/internal/edwards25519.
 func fePow22523(out, z *FieldElement) {
@@ -150,7 +104,7 @@ func FeSqrtRatio(u, v *FieldElement) (int, *FieldElement) {
 	FeNeg(uneg, u)
 	correct_sign_sqrt := FeEqual(check, u)
 	flipped_sign_sqrt := FeEqual(check, uneg)
-	FeMul(uneg, uneg, &SQRT_M1)
+	FeMul(uneg, uneg, sqrtM1)
 	flipped_sign_sqrt_i := FeEqual(check, uneg)
 
 	// done with these ("freeing" a, b)
@@ -159,11 +113,21 @@ func FeSqrtRatio(u, v *FieldElement) (int, *FieldElement) {
 	// r_prime = SQRT_M1 * r
 	// r = CT_SELECT(r_prime IF flipped_sign_sqrt | flipped_sign_sqrt_i ELSE r)
 	r_prime := &a
-	FeMul(r_prime, r, &SQRT_M1)
+	FeMul(r_prime, r, sqrtM1)
 	FeSelect(r, r_prime, r, flipped_sign_sqrt|flipped_sign_sqrt_i)
 
 	FeAbs(r, r)
 	was_square := correct_sign_sqrt | flipped_sign_sqrt
 
 	return was_square, r
+}
+
+func fieldElementFromDecimal(s string) *FieldElement {
+	n, ok := new(big.Int).SetString(s, 10)
+	if !ok {
+		panic("ristretto255: not a valid decimal: " + s)
+	}
+	var fe FieldElement
+	FeFromBig(&fe, n)
+	return &fe
 }
