@@ -333,12 +333,12 @@ func FeToBig(h *FieldElement) *big.Int {
 	return out.SetBits(words)
 }
 
-// FeEqual returns 1 if a and b are equal, and 0 otherwise.
-func FeEqual(a, b *FieldElement) int {
+// FeEqual returns true if a and b are equal, and false otherwise.
+func FeEqual(a, b *FieldElement) bool {
 	var sa, sb [32]byte
 	FeToBytes(&sa, a)
 	FeToBytes(&sb, b)
-	return subtle.ConstantTimeCompare(sa[:], sb[:])
+	return subtle.ConstantTimeCompare(sa[:], sb[:]) == 1
 }
 
 // FeSelect sets out to v if cond == 1, and to u if cond == 0.
