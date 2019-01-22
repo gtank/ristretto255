@@ -54,5 +54,75 @@ func (e *Element) FromUniformBytes(b []byte) {
 		panic("ristretto255: FromUniformBytes: input is not 64 bytes long")
 	}
 
-	panic("ristretto255: FromUniformBytes: unimplemented")
+	var buf [32]byte
+	f := &radix51.FieldElement{}
+
+	copy(buf[:], b[:32])
+	radix51.FeFromBytes(f, &buf)
+	p1 := &group.ExtendedGroupElement{}
+	mapToPoint(p1, f)
+
+	copy(buf[:], b[32:])
+	radix51.FeFromBytes(f, &buf)
+	p2 := &group.ExtendedGroupElement{}
+	mapToPoint(p2, f)
+
+	e.r.Add(p1, p2)
+}
+
+func mapToPoint(out *group.ExtendedGroupElement, t *radix51.FieldElement) {
+	r := &radix51.FieldElement{}
+	radix51.FeSquare(r, t)
+	radix51.FeMul(r, r, sqrtM1)
+
+	one := &radix51.FieldElement{}
+	radix51.FeOne(one)
+	minusOne := &radix51.FieldElement{}
+	radix51.FeNeg(minusOne, one)
+
+	u := &radix51.FieldElement{}
+	radix51.FeAdd(u, r, one)
+	radix51.FeMul(u, u, oneMinusDSQ)
+
+	rPlusD := &radix51.FieldElement{}
+	radix51.FeAdd(rPlusD, r, &group.D)
+	v := &radix51.FieldElement{}
+	radix51.FeMul(v, r, &group.D)
+	radix51.FeSub(v, minusOne, v)
+	radix51.FeMul(v, v, rPlusD)
+
+	s := &radix51.FieldElement{}
+	wasSquare := feSqrtRatio(s, u, v)
+	sPrime := &radix51.FieldElement{}
+	radix51.FeMul(sPrime, s, t)
+	radix51.FeAbs(sPrime, sPrime)
+	radix51.FeNeg(sPrime, sPrime)
+
+	c := &radix51.FieldElement{}
+	radix51.FeSelect(s, s, sPrime, wasSquare)
+	radix51.FeSelect(c, minusOne, r, wasSquare)
+
+	N := &radix51.FieldElement{}
+	radix51.FeSub(N, r, one)
+	radix51.FeMul(N, N, c)
+	radix51.FeMul(N, N, dMinusOneSQ)
+	radix51.FeSub(N, N, v)
+
+	sSquare := &radix51.FieldElement{}
+	radix51.FeSquare(sSquare, s)
+
+	w0 := &radix51.FieldElement{}
+	radix51.FeMul(w0, s, v)
+	radix51.FeAdd(w0, w0, w0)
+	w1 := &radix51.FieldElement{}
+	radix51.FeMul(w1, N, sqrtADMinusOne)
+	w2 := &radix51.FieldElement{}
+	radix51.FeSub(w2, one, sSquare)
+	w3 := &radix51.FieldElement{}
+	radix51.FeAdd(w3, one, sSquare)
+
+	radix51.FeMul(&out.X, w0, w3)
+	radix51.FeMul(&out.Y, w2, w1)
+	radix51.FeMul(&out.Z, w1, w3)
+	radix51.FeMul(&out.T, w0, w2)
 }

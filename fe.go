@@ -73,8 +73,8 @@ func fePow22523(out, z *FieldElement) {
 	FeMul(out, &t0, z)
 }
 
-func FeSqrtRatio(u, v *FieldElement) (int, *FieldElement) {
-	var a, b, c FieldElement
+func feSqrtRatio(out, u, v *FieldElement) int {
+	var a, b FieldElement
 
 	// v^3, v^7
 	v3, v7 := &a, &b
@@ -85,7 +85,7 @@ func FeSqrtRatio(u, v *FieldElement) (int, *FieldElement) {
 	FeMul(v7, v7, v) // v^7 = v^6 * v
 
 	// r = (u * v3) * (u * v7)^((p-5)/8)
-	r := &c
+	r := out
 	uv3, uv7 := v3, v7   // alias
 	FeMul(uv3, u, v3)    // (u * v3)
 	FeMul(uv7, u, v7)    // (u * v7)
@@ -119,7 +119,7 @@ func FeSqrtRatio(u, v *FieldElement) (int, *FieldElement) {
 	FeAbs(r, r)
 	was_square := correct_sign_sqrt | flipped_sign_sqrt
 
-	return was_square, r
+	return was_square
 }
 
 func fieldElementFromDecimal(s string) *FieldElement {
