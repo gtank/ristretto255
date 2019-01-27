@@ -2,6 +2,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+// Package ed25519 implements an elliptic.Curve interface on top of the twisted
+// Edwards curve -x^2 + y^2 = 1 + -(121665/121666)*x^2*y^2. This is better
+// known as the Edwards curve equivalent to curve25519, and is the curve used
+// by the Ed25519 signature scheme.
+//
+// Because of the Curve interface, this package takes input in affine (x,y)
+// pairs instead of the more standard compressed Edwards y.
 package ed25519
 
 import (
@@ -10,7 +17,7 @@ import (
 	"sync"
 
 	"github.com/gtank/ed25519/internal/group"
-	field "github.com/gtank/ed25519/internal/radix51"
+	"github.com/gtank/ed25519/internal/radix51"
 )
 
 var bigZero *big.Int
@@ -54,22 +61,22 @@ func (curve ed25519Curve) Params() *elliptic.CurveParams {
 // -x^2 + y^2 - 1 - dx^2y^2 = 0 (mod p). This function uses a hardcoded value
 // of d.
 func (curve ed25519Curve) IsOnCurve(x, y *big.Int) bool {
-	var feX, feY field.FieldElement
-	field.FeFromBig(&feX, x)
-	field.FeFromBig(&feY, y)
+	var feX, feY radix51.FieldElement
+	feX.FromBig(x)
+	feY.FromBig(y)
 
-	var lh, y2, rh field.FieldElement
-	field.FeSquare(&lh, &feX)              // x^2
-	field.FeSquare(&y2, &feY)              // y^2
-	field.FeMul(&rh, &lh, &y2)             // x^2*y^2
-	field.FeMul(&rh, &rh, &group.D)        // d*x^2*y^2
-	field.FeAdd(&rh, &rh, &field.FieldOne) // 1 + d*x^2*y^2
-	field.FeNeg(&lh, &lh)                  // -x^2
-	field.FeAdd(&lh, &lh, &y2)             // -x^2 + y^2
-	field.FeSub(&lh, &lh, &rh)             // -x^2 + y^2 - 1 - dx^2y^2
-	field.FeReduce(&lh, &lh)               // mod p
+	var lh, y2, rh radix51.FieldElement
+	lh.Square(&feX)          // x^2
+	y2.Square(&feY)          // y^2
+	rh.Mul(&lh, &y2)         // x^2*y^2
+	rh.Mul(&rh, group.D)     // d*x^2*y^2
+	rh.Add(&rh, radix51.One) // 1 + d*x^2*y^2
+	lh.Neg(&lh)              // -x^2
+	lh.Add(&lh, &y2)         // -x^2 + y^2
+	lh.Sub(&lh, &rh)         // -x^2 + y^2 - 1 - dx^2y^2
+	lh.Reduce()              // mod p
 
-	return field.FeEqual(&lh, &field.FieldZero)
+	return lh.Equal(radix51.Zero) == 1
 }
 
 // Add returns the sum of (x1, y1) and (x2, y2).

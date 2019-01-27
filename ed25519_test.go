@@ -27,8 +27,8 @@ func TestRadixRoundTrip(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		field.FeFromBig(&fe, n)
-		out = field.FeToBig(&fe)
+		fe.FromBig(n)
+		out = fe.ToBig()
 		if n.Cmp(out) != 0 {
 			t.Errorf("fe<>bn failed for %x", n.Bytes())
 		}
@@ -378,14 +378,14 @@ var radix51A = field.FieldElement{
 func BenchmarkFeMul51(b *testing.B) {
 	var h field.FieldElement
 	for i := 0; i < b.N; i++ {
-		field.FeMul(&h, &radix51A, &radix51A)
+		h.Mul(&radix51A, &radix51A)
 	}
 }
 
 func BenchmarkFeSquare51(b *testing.B) {
 	var h field.FieldElement
 	for i := 0; i < b.N; i++ {
-		field.FeSquare(&h, &radix51A)
+		h.Square(&radix51A)
 	}
 }
 
@@ -395,14 +395,15 @@ var randFieldInt, _ = rand.Int(rand.Reader, concreteCurve.P)
 func BenchmarkFeFromBig(b *testing.B) {
 	var fe field.FieldElement
 	for i := 0; i < b.N; i++ {
-		field.FeFromBig(&fe, randFieldInt)
+		fe.FromBig(randFieldInt)
 	}
 }
 
 var feOnes field.FieldElement = [5]uint64{1, 1, 1, 1, 1}
+var sink *big.Int
 
 func BenchmarkFeToBig(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		_ = field.FeToBig(&feOnes)
+		sink = feOnes.ToBig()
 	}
 }
