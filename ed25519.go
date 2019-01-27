@@ -91,12 +91,9 @@ func (curve ed25519Curve) Add(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
 
 // Double returns 2*(x,y).
 func (curve ed25519Curve) Double(x1, y1 *big.Int) (x, y *big.Int) {
-	var p group.ProjectiveGroupElement
-
-	p.FromAffine(x1, y1)
-
+	p := new(group.ProjectiveGroupElement).FromAffine(x1, y1)
 	// Use the special-case DoubleZ1 here because we know Z will be 1.
-	return p.DoubleZ1().ToAffine()
+	return p.DoubleZ1(p).ToAffine()
 }
 
 // ScalarMult returns k*(Bx,By) where k is a number in big-endian form.
@@ -125,10 +122,10 @@ func (curve ed25519Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) 
 		var b = int32((s[i/8] >> uint(i&7)) & 1)
 		if b == 0 {
 			r1.Add(&r0, &r1)
-			r0.Double()
+			r0.Double(&r0)
 		} else {
 			r0.Add(&r0, &r1)
-			r1.Double()
+			r1.Double(&r0)
 		}
 	}
 
