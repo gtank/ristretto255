@@ -35,13 +35,13 @@ type Element struct {
 func (e *Element) Equal(ee *Element) int {
 	var f0, f1 radix51.FieldElement
 
-	radix51.FeMul(&f0, &e.r.X, &ee.r.Y) // x1 * y2
-	radix51.FeMul(&f1, &e.r.Y, &ee.r.X) // y1 * x2
-	out := radix51.FeEqual(&f0, &f1)
+	f0.Mul(&e.r.X, &ee.r.Y) // x1 * y2
+	f1.Mul(&e.r.Y, &ee.r.X) // y1 * x2
+	out := f0.Equal(&f1)
 
-	radix51.FeMul(&f0, &e.r.Y, &ee.r.Y) // y1 * y2
-	radix51.FeMul(&f1, &e.r.X, &ee.r.X) // x1 * x2
-	out = out | radix51.FeEqual(&f0, &f1)
+	f0.Mul(&e.r.Y, &ee.r.Y) // y1 * y2
+	f1.Mul(&e.r.X, &ee.r.X) // x1 * x2
+	out = out | f0.Equal(&f1)
 
 	return out
 }
@@ -58,71 +58,75 @@ func (e *Element) FromUniformBytes(b []byte) {
 	f := &radix51.FieldElement{}
 
 	copy(buf[:], b[:32])
-	radix51.FeFromBytes(f, &buf)
+	f.FromBytes(&buf)
 	p1 := &group.ExtendedGroupElement{}
 	mapToPoint(p1, f)
 
 	copy(buf[:], b[32:])
-	radix51.FeFromBytes(f, &buf)
+	f.FromBytes(&buf)
 	p2 := &group.ExtendedGroupElement{}
 	mapToPoint(p2, f)
 
 	e.r.Add(p1, p2)
 }
 
+// mapToPoint implements MAP from Section 3.2.4 of draft-hdevalence-cfrg-ristretto-00.
 func mapToPoint(out *group.ExtendedGroupElement, t *radix51.FieldElement) {
+	// r = SQRT_M1 * t^2
 	r := &radix51.FieldElement{}
-	radix51.FeSquare(r, t)
-	radix51.FeMul(r, r, sqrtM1)
+	r.Mul(sqrtM1, r.Square(t))
 
-	one := &radix51.FieldElement{}
-	radix51.FeOne(one)
-	minusOne := &radix51.FieldElement{}
-	radix51.FeNeg(minusOne, one)
-
+	// u = (r + 1) * ONE_MINUS_D_SQ
 	u := &radix51.FieldElement{}
-	radix51.FeAdd(u, r, one)
-	radix51.FeMul(u, u, oneMinusDSQ)
+	u.Mul(u.Add(r, radix51.One), oneMinusDSQ)
 
+	// c = -1
+	c := &radix51.FieldElement{}
+	c.Set(radix51.MinusOne)
+
+	// v = (c - r*D) * (r + D)
 	rPlusD := &radix51.FieldElement{}
-	radix51.FeAdd(rPlusD, r, &group.D)
+	rPlusD.Add(r, group.D)
 	v := &radix51.FieldElement{}
-	radix51.FeMul(v, r, &group.D)
-	radix51.FeSub(v, minusOne, v)
-	radix51.FeMul(v, v, rPlusD)
+	v.Mul(v.Sub(c, v.Mul(r, group.D)), rPlusD)
 
+	// (was_square, s) = SQRT_RATIO_M1(u, v)
 	s := &radix51.FieldElement{}
 	wasSquare := feSqrtRatio(s, u, v)
+
+	// s_prime = -CT_ABS(s*t)
 	sPrime := &radix51.FieldElement{}
-	radix51.FeMul(sPrime, s, t)
-	radix51.FeAbs(sPrime, sPrime)
-	radix51.FeNeg(sPrime, sPrime)
+	sPrime.Neg(sPrime.Abs(sPrime.Mul(s, t)))
 
-	c := &radix51.FieldElement{}
-	radix51.FeSelect(s, s, sPrime, wasSquare)
-	radix51.FeSelect(c, minusOne, r, wasSquare)
+	// s = CT_SELECT(s IF was_square ELSE s_prime)
+	s.Select(s, sPrime, wasSquare)
+	// c = CT_SELECT(c IF was_square ELSE r)
+	c.Select(c, r, wasSquare)
 
+	// N = c * (r - 1) * D_MINUS_ONE_SQ - v
 	N := &radix51.FieldElement{}
-	radix51.FeSub(N, r, one)
-	radix51.FeMul(N, N, c)
-	radix51.FeMul(N, N, dMinusOneSQ)
-	radix51.FeSub(N, N, v)
+	N.Mul(c, N.Sub(r, radix51.One))
+	N.Sub(N.Mul(N, dMinusOneSQ), v)
 
-	sSquare := &radix51.FieldElement{}
-	radix51.FeSquare(sSquare, s)
+	s2 := &radix51.FieldElement{}
+	s2.Square(s)
 
+	// w0 = 2 * s * v
 	w0 := &radix51.FieldElement{}
-	radix51.FeMul(w0, s, v)
-	radix51.FeAdd(w0, w0, w0)
+	w0.Add(w0, w0.Mul(s, v))
+	// w1 = N * SQRT_AD_MINUS_ONE
 	w1 := &radix51.FieldElement{}
-	radix51.FeMul(w1, N, sqrtADMinusOne)
+	w1.Mul(N, sqrtADMinusOne)
+	// w2 = 1 - s^2
 	w2 := &radix51.FieldElement{}
-	radix51.FeSub(w2, one, sSquare)
+	w2.Sub(radix51.One, s2)
+	// w3 = 1 + s^2
 	w3 := &radix51.FieldElement{}
-	radix51.FeAdd(w3, one, sSquare)
+	w3.Add(radix51.One, s2)
 
-	radix51.FeMul(&out.X, w0, w3)
-	radix51.FeMul(&out.Y, w2, w1)
-	radix51.FeMul(&out.Z, w1, w3)
-	radix51.FeMul(&out.T, w0, w2)
+	// return (w0*w3, w2*w1, w1*w3, w0*w2)
+	out.X.Mul(w0, w3)
+	out.Y.Mul(w2, w1)
+	out.Z.Mul(w1, w3)
+	out.T.Mul(w0, w2)
 }

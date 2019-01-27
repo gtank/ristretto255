@@ -8,126 +8,104 @@ package ristretto255
 import (
 	"math/big"
 
-	. "github.com/gtank/ristretto255/internal/radix51"
+	"github.com/gtank/ristretto255/internal/radix51"
 )
 
-// fePow22523 is from x/crypto/ed25519/internal/edwards25519.
-func fePow22523(out, z *FieldElement) {
-	var t0, t1, t2 FieldElement
-	var i int
+// fePow22523 sets out to z^((p-5)/8). TODO
+func fePow22523(out, z *radix51.FieldElement) *radix51.FieldElement {
+	// Refactored from golang.org/x/crypto/ed25519/internal/edwards25519.
 
-	FeSquare(&t0, z)
-	for i = 1; i < 1; i++ {
-		FeSquare(&t0, &t0)
+	var t0, t1, t2 radix51.FieldElement
+
+	t0.Square(z)
+	for i := 1; i < 1; i++ {
+		t0.Square(&t0)
 	}
-	FeSquare(&t1, &t0)
-	for i = 1; i < 2; i++ {
-		FeSquare(&t1, &t1)
+	t1.Square(&t0)
+	for i := 1; i < 2; i++ {
+		t1.Square(&t1)
 	}
-	FeMul(&t1, z, &t1)
-	FeMul(&t0, &t0, &t1)
-	FeSquare(&t0, &t0)
-	for i = 1; i < 1; i++ {
-		FeSquare(&t0, &t0)
+	t1.Mul(z, &t1)
+	t0.Mul(&t0, &t1)
+	t0.Square(&t0)
+	for i := 1; i < 1; i++ {
+		t0.Square(&t0)
 	}
-	FeMul(&t0, &t1, &t0)
-	FeSquare(&t1, &t0)
-	for i = 1; i < 5; i++ {
-		FeSquare(&t1, &t1)
+	t0.Mul(&t1, &t0)
+	t1.Square(&t0)
+	for i := 1; i < 5; i++ {
+		t1.Square(&t1)
 	}
-	FeMul(&t0, &t1, &t0)
-	FeSquare(&t1, &t0)
-	for i = 1; i < 10; i++ {
-		FeSquare(&t1, &t1)
+	t0.Mul(&t1, &t0)
+	t1.Square(&t0)
+	for i := 1; i < 10; i++ {
+		t1.Square(&t1)
 	}
-	FeMul(&t1, &t1, &t0)
-	FeSquare(&t2, &t1)
-	for i = 1; i < 20; i++ {
-		FeSquare(&t2, &t2)
+	t1.Mul(&t1, &t0)
+	t2.Square(&t1)
+	for i := 1; i < 20; i++ {
+		t2.Square(&t2)
 	}
-	FeMul(&t1, &t2, &t1)
-	FeSquare(&t1, &t1)
-	for i = 1; i < 10; i++ {
-		FeSquare(&t1, &t1)
+	t1.Mul(&t2, &t1)
+	t1.Square(&t1)
+	for i := 1; i < 10; i++ {
+		t1.Square(&t1)
 	}
-	FeMul(&t0, &t1, &t0)
-	FeSquare(&t1, &t0)
-	for i = 1; i < 50; i++ {
-		FeSquare(&t1, &t1)
+	t0.Mul(&t1, &t0)
+	t1.Square(&t0)
+	for i := 1; i < 50; i++ {
+		t1.Square(&t1)
 	}
-	FeMul(&t1, &t1, &t0)
-	FeSquare(&t2, &t1)
-	for i = 1; i < 100; i++ {
-		FeSquare(&t2, &t2)
+	t1.Mul(&t1, &t0)
+	t2.Square(&t1)
+	for i := 1; i < 100; i++ {
+		t2.Square(&t2)
 	}
-	FeMul(&t1, &t2, &t1)
-	FeSquare(&t1, &t1)
-	for i = 1; i < 50; i++ {
-		FeSquare(&t1, &t1)
+	t1.Mul(&t2, &t1)
+	t1.Square(&t1)
+	for i := 1; i < 50; i++ {
+		t1.Square(&t1)
 	}
-	FeMul(&t0, &t1, &t0)
-	FeSquare(&t0, &t0)
-	for i = 1; i < 2; i++ {
-		FeSquare(&t0, &t0)
+	t0.Mul(&t1, &t0)
+	t0.Square(&t0)
+	for i := 1; i < 2; i++ {
+		t0.Square(&t0)
 	}
-	FeMul(out, &t0, z)
+	return out.Mul(&t0, z)
 }
 
-func feSqrtRatio(out, u, v *FieldElement) int {
-	var a, b FieldElement
+// feSqrtRatio sets r to the square root of the ratio of u and v, according to
+// Section 3.1.3 of draft-hdevalence-cfrg-ristretto-00.
+func feSqrtRatio(r, u, v *radix51.FieldElement) (wasSquare int) {
+	var a, b radix51.FieldElement
 
-	// v^3, v^7
-	v3, v7 := &a, &b
-
-	FeSquare(v3, v)  // v^2 = v*v
-	FeMul(v3, v3, v) // v^3 = v^2 * v
-	FeSquare(v7, v3) // v^6 = v^3 * v^3
-	FeMul(v7, v7, v) // v^7 = v^6 * v
+	v3 := a.Mul(a.Square(v), v)  // v^3 = v^2 * v
+	v7 := b.Mul(b.Square(v3), v) // v^7 = (v^3)^2 * v
 
 	// r = (u * v3) * (u * v7)^((p-5)/8)
-	r := out
-	uv3, uv7 := v3, v7   // alias
-	FeMul(uv3, u, v3)    // (u * v3)
-	FeMul(uv7, u, v7)    // (u * v7)
-	fePow22523(uv7, uv7) // (u * v7) ^ ((q - 5)/8)
-	FeMul(r, uv3, uv7)
+	uv3 := a.Mul(u, v3) // (u * v3)
+	uv7 := b.Mul(u, v7) // (u * v7)
+	r.Mul(uv3, fePow22523(r, uv7))
 
-	// done with these ("freeing" a, b)
-	v3, v7, uv3, uv7 = nil, nil, nil, nil
+	check := a.Mul(v, a.Square(r)) // check = v * r^2
 
-	// check = v * r^2
-	check := &a
-	FeMul(check, r, r)     // r^2
-	FeMul(check, check, v) // v * r^2
+	uNeg := b.Neg(u)
+	correctSignSqrt := check.Equal(u)
+	flippedSignSqrt := check.Equal(uNeg)
+	flippedSignSqrtI := check.Equal(uNeg.Mul(uNeg, sqrtM1))
 
-	uneg := &b
-	FeNeg(uneg, u)
-	correct_sign_sqrt := FeEqual(check, u)
-	flipped_sign_sqrt := FeEqual(check, uneg)
-	FeMul(uneg, uneg, sqrtM1)
-	flipped_sign_sqrt_i := FeEqual(check, uneg)
-
-	// done with these ("freeing" a, b)
-	check, uneg = nil, nil
-
-	// r_prime = SQRT_M1 * r
+	rPrime := b.Mul(r, sqrtM1) // r_prime = SQRT_M1 * r
 	// r = CT_SELECT(r_prime IF flipped_sign_sqrt | flipped_sign_sqrt_i ELSE r)
-	r_prime := &a
-	FeMul(r_prime, r, sqrtM1)
-	FeSelect(r, r_prime, r, flipped_sign_sqrt|flipped_sign_sqrt_i)
+	r.Select(rPrime, r, flippedSignSqrt|flippedSignSqrtI)
 
-	FeAbs(r, r)
-	was_square := correct_sign_sqrt | flipped_sign_sqrt
-
-	return was_square
+	r.Abs(r) // Choose the nonnegative square root.
+	return correctSignSqrt | flippedSignSqrt
 }
 
-func fieldElementFromDecimal(s string) *FieldElement {
+func fieldElementFromDecimal(s string) *radix51.FieldElement {
 	n, ok := new(big.Int).SetString(s, 10)
 	if !ok {
 		panic("ristretto255: not a valid decimal: " + s)
 	}
-	var fe FieldElement
-	FeFromBig(&fe, n)
-	return &fe
+	return new(radix51.FieldElement).FromBig(n)
 }
