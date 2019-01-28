@@ -104,35 +104,28 @@ func BenchmarkDouble(b *testing.B) {
 
 func TestScalarMult(t *testing.T) {
 	ed := Ed25519()
-	x, y := ed.Params().Gx, ed.Params().Gy
+	Bx, By := ed.Params().Gx, ed.Params().Gy
+	var rX, rY, accX, accY = new(big.Int), new(big.Int), new(big.Int), new(big.Int)
 
-	twoX, twoY := ed.ScalarMult(x, y, big.NewInt(2).Bytes())
-	xPlusX, yPlusY := ed.Add(x, y, x, y)
+	for i := 1; i <= 1024; i++ {
+		rX, rY = ed.ScalarMult(Bx, By, big.NewInt(int64(i)).Bytes())
+		if i == 0 && (rX.Cmp(Bx) != 0 || rY.Cmp(By) != 0) {
+			t.Error("bad ScalarMul")
+		}
+		accX.Set(Bx)
+		accY.Set(By)
+		for j := 1; j < i; j++ {
+			accX, accY = ed.Add(accX, accY, Bx, By)
+		}
 
-	if !ed.IsOnCurve(twoX, twoY) {
-		t.Error("2*B is not on the curve")
-	}
+		if !ed.IsOnCurve(rX, rY) || !ed.IsOnCurve(accX, accY) {
+			t.Error("not on the curve")
+		}
 
-	if twoX.Cmp(xPlusX) != 0 || twoY.Cmp(yPlusY) != 0 {
-		t.Errorf("2*B != B+B")
-	}
-
-	// TODO: fuzz like it's going out of style
-	if !testing.Short() {
-		buf := make([]byte, 32)
-		for i := 0; i < 1000; i++ {
-			_, err := io.ReadFull(rand.Reader, buf)
-			if err != nil {
-				t.Fatal(err)
-			}
-			randX, randY := ed.ScalarMult(x, y, buf)
-
-			if !ed.IsOnCurve(randX, randY) {
-				t.Errorf("scalarMult return off-curve point for scalar %x", buf)
-			}
+		if rX.Cmp(accX) != 0 || rY.Cmp(accY) != 0 {
+			t.Errorf("inconsistent ScalarMult: %x", i)
 		}
 	}
-
 }
 
 func BenchmarkScalarMult(b *testing.B) {

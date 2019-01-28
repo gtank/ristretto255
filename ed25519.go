@@ -125,7 +125,7 @@ func (curve ed25519Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) 
 			r0.Double(&r0)
 		} else {
 			r0.Add(&r0, &r1)
-			r1.Double(&r0)
+			r1.Double(&r1)
 		}
 	}
 
