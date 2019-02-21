@@ -48,7 +48,7 @@ func TestFieldElementMulDistributesOverAdd(t *testing.T) {
 		t3 := new(FieldElement)
 		t2.Mul(&x, &z)
 		t3.Mul(&y, &z)
-		t2.Add(t2, t2)
+		t2.Add(t2, t3)
 
 		return t1.Equal(t2) == 1
 	}
@@ -72,10 +72,10 @@ func TestMulDistributionFailure1(t *testing.T) {
 	t3 := new(FieldElement)
 	t2.Mul(&x, &z)
 	t3.Mul(&y, &z)
-	t2.Add(t2, t2)
+	t2.Add(t2, t3)
 
 	if t1.Equal(t2) != 1 {
-		t.Errorf("t1 should equal t2")
+		t.Errorf("t1 = %x should equal t2 = %x", t1, t2)
 	}
 }
 
