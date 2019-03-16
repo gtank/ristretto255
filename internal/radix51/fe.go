@@ -19,7 +19,7 @@ import (
 type FieldElement [5]uint64
 
 const (
-	// The vaule 2^51-1, used in carry propagation
+	// The value 2^51-1, used in carry propagation
 	maskLow51Bits = uint64(1)<<51 - 1
 )
 
