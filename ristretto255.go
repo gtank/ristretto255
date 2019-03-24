@@ -8,7 +8,6 @@
 package ristretto255
 
 import (
-	"encoding/hex"
 	"errors"
 
 	"github.com/gtank/ristretto255/internal/edwards25519"
@@ -26,11 +25,6 @@ var (
 		"1159843021668779879193775521855586647937357759715417654439879720876111806838")
 	dMinusOneSQ = fieldElementFromDecimal(
 		"40440834346308536858101042469323190826248399146238708352240133220865137265952")
-
-	// The encoding of the Ristretto element that can be represented internally
-	// by the Curve25519 base point.
-	encodedBasepoint, _ = hex.DecodeString(
-		"e2f2ae0a6abc4e71a884a961c500515f58e30b6aa582dd8db6a65945e08d2d76")
 
 	errInvalidEncoding = errors.New("invalid Ristretto encoding")
 )
