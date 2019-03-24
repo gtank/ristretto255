@@ -1,8 +1,10 @@
 package ristretto255
 
 import (
+	"encoding/hex"
 	"testing"
 
+	"github.com/gtank/ristretto255/internal/group"
 	"github.com/gtank/ristretto255/internal/radix51"
 )
 
@@ -63,9 +65,26 @@ func TestSqrtRatioM1(t *testing.T) {
 }
 
 func TestRistrettoBasepointDecode(t *testing.T) {
-	extendedBasepoint := &Element{}
-	err := extendedBasepoint.Decode(encodedBasepoint)
+	var (
+		// The encoding of Ristretto element that can be represented internally by the Curve25519 base point.
+		compressedRistrettoBasepoint, _ = hex.DecodeString("e2f2ae0a6abc4e71a884a961c500515f58e30b6aa582dd8db6a65945e08d2d76")
+
+		// The representative Ristretto basepoint in extended coordinates.
+		ristrettoBasepoint = Element{r: group.ExtendedGroupElement{
+			X: radix51.FieldElement([5]uint64{426475514619346, 2063872706840040, 14628272888959, 107677749330612, 288339085807592}),
+			Y: radix51.FieldElement([5]uint64{1934594822876571, 2049809580636559, 1991994783322914, 1758681962032007, 380046701118659}),
+			Z: radix51.FieldElement([5]uint64{1, 0, 0, 0, 0}),
+			T: radix51.FieldElement([5]uint64{410445769351754, 2235400917701188, 1495825632738689, 1351628537510093, 430502003771208}),
+		}}
+	)
+
+	decodedBasepoint := &Element{}
+	err := decodedBasepoint.Decode(compressedRistrettoBasepoint)
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	if decodedBasepoint.Equal(&ristrettoBasepoint) != 1 {
+		t.Error("decode succeeded, but got wrong point")
 	}
 }
