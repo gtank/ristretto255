@@ -54,16 +54,13 @@ func (e *Element) FromUniformBytes(b []byte) {
 		panic("ristretto255: FromUniformBytes: input is not 64 bytes long")
 	}
 
-	var buf [32]byte
 	f := &radix51.FieldElement{}
 
-	copy(buf[:], b[:32])
-	f.FromBytes(&buf)
+	f.FromBytes(b[:32])
 	p1 := &group.ExtendedGroupElement{}
 	mapToPoint(p1, f)
 
-	copy(buf[:], b[32:])
-	f.FromBytes(&buf)
+	f.FromBytes(b[32:])
 	p2 := &group.ExtendedGroupElement{}
 	mapToPoint(p2, f)
 
