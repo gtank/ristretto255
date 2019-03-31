@@ -133,7 +133,7 @@ func mapToPoint(out *edwards25519.ExtendedGroupElement, t *radix51.FieldElement)
 }
 
 // Encode encodes a Ristretto group element to its canonical bytestring.
-func (e *Element) Encode(ee *Element) []byte {
+func (ee *Element) Encode() []byte {
 	tmp := &radix51.FieldElement{}
 
 	// u1 = (z0 + y0) * (z0 - y0)
