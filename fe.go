@@ -11,7 +11,7 @@ import (
 	"github.com/gtank/ristretto255/internal/radix51"
 )
 
-// fePow22523 sets out to z^((p-5)/8). TODO
+// fePow22523 sets out to z^((p-5)/8). (p-5)/8 is 2^252-3.
 func fePow22523(out, z *radix51.FieldElement) *radix51.FieldElement {
 	// Refactored from golang.org/x/crypto/ed25519/internal/edwards25519.
 
