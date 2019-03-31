@@ -74,7 +74,6 @@ func (curve ed25519Curve) IsOnCurve(x, y *big.Int) bool {
 	lh.Neg(&lh)              // -x^2
 	lh.Add(&lh, &y2)         // -x^2 + y^2
 	lh.Sub(&lh, &rh)         // -x^2 + y^2 - 1 - dx^2y^2
-	lh.Reduce(&lh)           // mod p
 
 	return lh.Equal(radix51.Zero) == 1
 }
