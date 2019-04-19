@@ -8,7 +8,7 @@
 package ristretto255
 
 import (
-	"github.com/gtank/ristretto255/internal/group"
+	"github.com/gtank/ristretto255/internal/edwards25519"
 	"github.com/gtank/ristretto255/internal/radix51"
 )
 
@@ -27,7 +27,7 @@ var (
 
 // Element is an element of the ristretto255 prime-order group.
 type Element struct {
-	r group.ExtendedGroupElement
+	r edwards25519.ExtendedGroupElement
 }
 
 // Equal returns 1 if e is equivalent to ee, and 0 otherwise.
@@ -57,18 +57,18 @@ func (e *Element) FromUniformBytes(b []byte) {
 	f := &radix51.FieldElement{}
 
 	f.FromBytes(b[:32])
-	p1 := &group.ExtendedGroupElement{}
+	p1 := &edwards25519.ExtendedGroupElement{}
 	mapToPoint(p1, f)
 
 	f.FromBytes(b[32:])
-	p2 := &group.ExtendedGroupElement{}
+	p2 := &edwards25519.ExtendedGroupElement{}
 	mapToPoint(p2, f)
 
 	e.r.Add(p1, p2)
 }
 
 // mapToPoint implements MAP from Section 3.2.4 of draft-hdevalence-cfrg-ristretto-00.
-func mapToPoint(out *group.ExtendedGroupElement, t *radix51.FieldElement) {
+func mapToPoint(out *edwards25519.ExtendedGroupElement, t *radix51.FieldElement) {
 	// r = SQRT_M1 * t^2
 	r := &radix51.FieldElement{}
 	r.Mul(sqrtM1, r.Square(t))
@@ -83,9 +83,9 @@ func mapToPoint(out *group.ExtendedGroupElement, t *radix51.FieldElement) {
 
 	// v = (c - r*D) * (r + D)
 	rPlusD := &radix51.FieldElement{}
-	rPlusD.Add(r, group.D)
+	rPlusD.Add(r, edwards25519.D)
 	v := &radix51.FieldElement{}
-	v.Mul(v.Sub(c, v.Mul(r, group.D)), rPlusD)
+	v.Mul(v.Sub(c, v.Mul(r, edwards25519.D)), rPlusD)
 
 	// (was_square, s) = SQRT_RATIO_M1(u, v)
 	s := &radix51.FieldElement{}
