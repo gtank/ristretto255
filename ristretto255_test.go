@@ -134,7 +134,7 @@ func TestRistrettoSmallMultiplesTestVectors(t *testing.T) {
 		// Grab the bytes of the encoding
 		encoding, err := hex.DecodeString(testVectors[i])
 		if err != nil {
-			t.Error("Bad hex encoding in test vector")
+			t.Fatalf("#%d: bad hex encoding in test vector: %v", i, err)
 		}
 
 		// Decode the test vector to a ristretto255 element
