@@ -89,12 +89,12 @@ func TestRistrettoEncoding(t *testing.T) {
 		t.Error("decode succeeded, but got wrong point")
 	}
 
-	roundtripBasepoint := decodedBasepoint.Encode()
+	roundtripBasepoint := decodedBasepoint.Encode(nil)
 	if !bytes.Equal(compressedRistrettoBasepoint, roundtripBasepoint) {
 		t.Error("decode<>encode roundtrip produced different results")
 	}
 
-	encodedBasepoint := ristrettoBasepoint.Encode()
+	encodedBasepoint := ristrettoBasepoint.Encode(nil)
 	if !bytes.Equal(compressedRistrettoBasepoint, encodedBasepoint) {
 		t.Error("point encode produced different results")
 	}
