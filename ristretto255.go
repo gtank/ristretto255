@@ -8,6 +8,7 @@
 package ristretto255
 
 import (
+	"bytes"
 	"errors"
 
 	"github.com/gtank/ristretto255/internal/edwards25519"
@@ -191,8 +192,8 @@ func (ee *Element) Encode() []byte {
 	return s.Bytes(nil)
 }
 
-// Decode decodes the canonical bytestring encoding of an element into a Ristretto element.
-// Returns nil on success.
+// Decode decodes the canonical bytestring encoding of an element into a
+// Ristretto element.
 func (e *Element) Decode(in []byte) error {
 	if len(in) != 32 {
 		return errInvalidEncoding
@@ -203,8 +204,13 @@ func (e *Element) Decode(in []byte) error {
 	s.FromBytes(in)
 
 	// If the resulting value is >= p, decoding fails.
+	var buf [32]byte
+	if !bytes.Equal(s.Bytes(buf[:0]), in) {
+		return errInvalidEncoding
+	}
+
 	// If IS_NEGATIVE(s) returns TRUE, decoding fails.
-	if !feMinimal(s) || s.IsNegative() == 1 {
+	if s.IsNegative() == 1 {
 		return errInvalidEncoding
 	}
 

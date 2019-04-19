@@ -109,21 +109,3 @@ func fieldElementFromDecimal(s string) *radix51.FieldElement {
 	}
 	return new(radix51.FieldElement).FromBig(n)
 }
-
-// The order of the field, 2^255 - 19, in 51-bit little endian form.
-var fieldOrder = [5]uint64{0x7ffffffffffed, 0x7ffffffffffff, 0x7ffffffffffff, 0x7ffffffffffff, 0x7ffffffffffff}
-
-// feMinimal returns true if the given field element is less than the order of the field.
-func feMinimal(fe *radix51.FieldElement) bool {
-	for i := 4; ; i-- {
-		v := fe[i]
-		if v > fieldOrder[i] {
-			return false
-		} else if v < fieldOrder[i] {
-			break
-		} else if i == 0 {
-			return false
-		}
-	}
-	return true
-}
