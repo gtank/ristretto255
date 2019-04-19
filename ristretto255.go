@@ -255,3 +255,21 @@ func (e *Element) Decode(in []byte) error {
 	// Otherwise, return the internal representation in extended coordinates (x, y, 1, t).
 	return nil
 }
+
+// Add sets v = p + q, and returns v.
+func (v *Element) Add(p, q *Element) *Element {
+	v.r.Add(&p.r, &q.r)
+	return v
+}
+
+// Sub sets v = p - q, and returns v.
+func (v *Element) Sub(p, q *Element) *Element {
+	v.r.Sub(&p.r, &q.r)
+	return v
+}
+
+// Neg sets v = -p, and returns v.
+func (v *Element) Neg(p *Element) *Element {
+	v.r.Neg(&p.r)
+	return v
+}
