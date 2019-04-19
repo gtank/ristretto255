@@ -141,7 +141,7 @@ func TestRistrettoSmallMultiplesTestVectors(t *testing.T) {
 		decodedPoint := Element{}
 		err = decodedPoint.Decode(encoding)
 		if err != nil {
-			t.Error("Could not decode test vector")
+			t.Fatalf("#%d: could not decode test vector: %v", i, err)
 		}
 		// Re-encode and check round trips
 		roundtripEncoding := decodedPoint.Encode(nil)
