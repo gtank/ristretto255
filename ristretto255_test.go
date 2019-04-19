@@ -153,6 +153,11 @@ func TestRistrettoSmallMultiplesTestVectors(t *testing.T) {
 		if basepointMultiple.Equal(&decodedPoint) != 1 {
 			t.Errorf("decoded small multiple %d * B is not %d * B", i, i)
 		}
+		computedEncoding := basepointMultiple.Encode(nil)
+		if !bytes.Equal(encoding, computedEncoding) {
+			t.Errorf("#%d: encoding computed value did not match", i)
+		}
+
 		// Ensure basepointMultiple = i * B in the next iteration
 		basepointMultiple.Add(&basepointMultiple, &ristrettoBasepoint)
 	}
