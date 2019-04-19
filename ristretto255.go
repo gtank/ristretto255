@@ -31,6 +31,9 @@ var (
 )
 
 // Element is an element of the ristretto255 prime-order group.
+//
+// The zero value of Element is not valid, but can be used as the receiver for
+// any operation.
 type Element struct {
 	r edwards25519.ExtendedGroupElement
 }
@@ -51,7 +54,7 @@ func (e *Element) Equal(ee *Element) int {
 	return out
 }
 
-// FromUniformBytes maps the 64-byte slice b to an Element e uniformly and
+// FromUniformBytes maps the 64-byte slice b to e uniformly and
 // deterministically. This can be used for hash-to-group operations or to obtain
 // a random element.
 func (e *Element) FromUniformBytes(b []byte) {
@@ -133,7 +136,7 @@ func mapToPoint(out *edwards25519.ExtendedGroupElement, t *radix51.FieldElement)
 	out.T.Mul(w0, w2)
 }
 
-// Encode appends the canonical representation of e to b and returns the result.
+// Encode appends the canonical encoding of e to b and returns the result.
 func (e *Element) Encode(b []byte) []byte {
 	tmp := &radix51.FieldElement{}
 
@@ -192,8 +195,8 @@ func (e *Element) Encode(b []byte) []byte {
 	return s.Bytes(b)
 }
 
-// Decode decodes the canonical bytestring encoding of an element into a
-// Ristretto element.
+// Decode sets e to the decoded value of in. If in is not a canonical encoding,
+// Decode returns an error, and the receiver is unchanged.
 func (e *Element) Decode(in []byte) error {
 	if len(in) != 32 {
 		return errInvalidEncoding
