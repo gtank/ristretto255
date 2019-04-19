@@ -146,7 +146,7 @@ func TestRistrettoSmallMultiplesTestVectors(t *testing.T) {
 		// Re-encode and check round trips
 		roundtripEncoding := decodedPoint.Encode(nil)
 		if !bytes.Equal(encoding, roundtripEncoding) {
-			t.Errorf("decode<>encode roundtrip failed on test vector %d", i)
+			t.Errorf("#%d: decode<>encode roundtrip failed", i)
 		}
 
 		// Check that the test vector encodes i * B
