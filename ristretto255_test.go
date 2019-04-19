@@ -130,7 +130,7 @@ func TestRistrettoSmallMultiplesTestVectors(t *testing.T) {
 	basepointMultiple := Element{}
 	basepointMultiple.Zero()
 
-	for i := 0; i < 16; i++ {
+	for i := range testVectors {
 		// Grab the bytes of the encoding
 		encoding, err := hex.DecodeString(testVectors[i])
 		if err != nil {
