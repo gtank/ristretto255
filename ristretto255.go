@@ -250,7 +250,7 @@ func (e *Element) Decode(in []byte) error {
 	// x = CT_ABS(2 * s * den_x)
 	// y = u1 * den_y
 	// t = x * y
-	out := &e.r
+	var out edwards25519.ExtendedGroupElement
 	out.X.Mul(radix51.Two, s).Mul(&out.X, denX).Abs(&out.X)
 	out.Y.Mul(u1, denY)
 	out.Z.One()
@@ -262,6 +262,7 @@ func (e *Element) Decode(in []byte) error {
 	}
 
 	// Otherwise, return the internal representation in extended coordinates (x, y, 1, t).
+	e.r.Set(&out)
 	return nil
 }
 
