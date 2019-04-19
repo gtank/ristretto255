@@ -148,24 +148,24 @@ func (e *Element) Encode(b []byte) []byte {
 	// Ignore was_square since this is always square
 	// (_, invsqrt) = SQRT_RATIO_M1(1, u1 * u2^2)
 	invSqrt := &radix51.FieldElement{}
-	_ = feSqrtRatio(invSqrt, u1, tmp.Square(u2))
+	feSqrtRatio(invSqrt, radix51.One, tmp.Square(u2).Mul(tmp, u1))
 
 	// den1 = invsqrt * u1
 	// den2 = invsqrt * u2
-	// z_inv = den1 * den2 * t0
 	den1, den2 := &radix51.FieldElement{}, &radix51.FieldElement{}
-	zInv := &radix51.FieldElement{}
 	den1.Mul(invSqrt, u1)
 	den2.Mul(invSqrt, u2)
+	// z_inv = den1 * den2 * t0
+	zInv := &radix51.FieldElement{}
 	zInv.Mul(den1, den2).Mul(zInv, &e.r.T)
 
 	// ix0 = x0 * SQRT_M1
 	// iy0 = y0 * SQRT_M1
-	// enchanted_denominator = den1 * INVSQRT_A_MINUS_D
 	ix0, iy0 := &radix51.FieldElement{}, &radix51.FieldElement{}
-	enchantedDenominator := &radix51.FieldElement{}
 	ix0.Mul(&e.r.X, sqrtM1)
 	iy0.Mul(&e.r.Y, sqrtM1)
+	// enchanted_denominator = den1 * INVSQRT_A_MINUS_D
+	enchantedDenominator := &radix51.FieldElement{}
 	enchantedDenominator.Mul(den1, invSqrtAMinusD)
 
 	// rotate = IS_NEGATIVE(t0 * z_inv)
@@ -173,20 +173,20 @@ func (e *Element) Encode(b []byte) []byte {
 
 	// x = CT_SELECT(iy0 IF rotate ELSE x0)
 	// y = CT_SELECT(ix0 IF rotate ELSE y0)
-	// z = z0
-	// den_inv = CT_SELECT(enchanted_denominator IF rotate ELSE den2)
 	x, y := &radix51.FieldElement{}, &radix51.FieldElement{}
-	denInv := &radix51.FieldElement{}
 	x.Select(iy0, &e.r.X, rotate)
 	y.Select(ix0, &e.r.Y, rotate)
+	// z = z0
 	z := &e.r.Z
+	// den_inv = CT_SELECT(enchanted_denominator IF rotate ELSE den2)
+	denInv := &radix51.FieldElement{}
 	denInv.Select(enchantedDenominator, den2, rotate)
 
 	// y = CT_NEG(y, IS_NEGATIVE(x * z_inv))
 	y.CondNeg(y, tmp.Mul(x, zInv).IsNegative())
 
 	// s = CT_ABS(den_inv * (z - y))
-	s := tmp.Mul(denInv, tmp.Sub(z, y)).Abs(tmp)
+	s := tmp.Sub(z, y).Mul(tmp, denInv).Abs(tmp)
 
 	// Return the canonical little-endian encoding of s.
 	return s.Bytes(b)
