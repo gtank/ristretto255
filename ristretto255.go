@@ -282,3 +282,9 @@ func (v *Element) Neg(p *Element) *Element {
 	v.r.Neg(&p.r)
 	return v
 }
+
+// Zero sets v to the identity element of the group, and returns v.
+func (v *Element) Zero() *Element {
+	v.r.Zero()
+	return v
+}

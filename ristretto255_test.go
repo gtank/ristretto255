@@ -127,26 +127,33 @@ func TestRistrettoSmallMultiplesTestVectors(t *testing.T) {
 		"e0c418f7c8d9c4cdd7395b93ea124f3ad99021bb681dfc3302a9d99a2e53e64e",
 	}
 
-	// TODO need to use Ristretto addition to do this test properly, see
-	// https://ristretto.group/test_vectors/ristretto255.html
+	basepointMultiple := Element{}
+	basepointMultiple.Zero()
 
 	for i := 0; i < 16; i++ {
+		// Grab the bytes of the encoding
 		encoding, err := hex.DecodeString(testVectors[i])
 		if err != nil {
 			t.Error("Bad hex encoding in test vector")
 		}
+
 		// Decode the test vector to a ristretto255 element
-		decodedPoint := &Element{}
+		decodedPoint := Element{}
 		err = decodedPoint.Decode(encoding)
 		if err != nil {
 			t.Error("Could not decode test vector")
 		}
 		// Re-encode and check round trips
-		roundtripPoint := decodedPoint.Encode()
-		if !bytes.Equal(encoding, roundtripPoint) {
+		roundtripEncoding := decodedPoint.Encode(nil)
+		if !bytes.Equal(encoding, roundtripEncoding) {
 			t.Errorf("decode<>encode roundtrip failed on test vector %d", i)
 		}
+
 		// Check that the test vector encodes i * B
-		// TODO add this (need addition, see above)
+		if basepointMultiple.Equal(&decodedPoint) != 1 {
+			t.Errorf("decoded small multiple %d * B is not %d * B", i, i)
+		}
+		// Ensure basepointMultiple = i * B in the next iteration
+		basepointMultiple.Add(&basepointMultiple, &ristrettoBasepoint)
 	}
 }
