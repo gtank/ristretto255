@@ -71,7 +71,7 @@ var (
 	compressedRistrettoBasepoint, _ = hex.DecodeString("e2f2ae0a6abc4e71a884a961c500515f58e30b6aa582dd8db6a65945e08d2d76")
 
 	// The representative Ristretto basepoint in extended coordinates.
-	ristrettoBasepoint = Element{r: edwards25519.ExtendedGroupElement{
+	ristrettoBasepoint = Element{r: edwards25519.ProjP3{
 		X: radix51.FieldElement([5]uint64{426475514619346, 2063872706840040, 14628272888959, 107677749330612, 288339085807592}),
 		Y: radix51.FieldElement([5]uint64{1934594822876571, 2049809580636559, 1991994783322914, 1758681962032007, 380046701118659}),
 		Z: radix51.FieldElement([5]uint64{1, 0, 0, 0, 0}),

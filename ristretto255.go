@@ -35,7 +35,7 @@ var (
 // The zero value of Element is not valid, but can be used as the receiver for
 // any operation.
 type Element struct {
-	r edwards25519.ExtendedGroupElement
+	r edwards25519.ProjP3
 }
 
 // Equal returns 1 if e is equivalent to ee, and 0 otherwise.
@@ -65,18 +65,18 @@ func (e *Element) FromUniformBytes(b []byte) {
 	f := &radix51.FieldElement{}
 
 	f.FromBytes(b[:32])
-	p1 := &edwards25519.ExtendedGroupElement{}
-	mapToPoint(p1, f)
+	point1 := &Element{}
+	mapToPoint(&point1.r, f)
 
 	f.FromBytes(b[32:])
-	p2 := &edwards25519.ExtendedGroupElement{}
-	mapToPoint(p2, f)
+	point2 := &Element{}
+	mapToPoint(&point2.r, f)
 
-	e.r.Add(p1, p2)
+	e.Add(point1, point2)
 }
 
 // mapToPoint implements MAP from Section 3.2.4 of draft-hdevalence-cfrg-ristretto-00.
-func mapToPoint(out *edwards25519.ExtendedGroupElement, t *radix51.FieldElement) {
+func mapToPoint(out *edwards25519.ProjP3, t *radix51.FieldElement) {
 	// r = SQRT_M1 * t^2
 	r := &radix51.FieldElement{}
 	r.Mul(sqrtM1, r.Square(t))
@@ -250,7 +250,7 @@ func (e *Element) Decode(in []byte) error {
 	// x = CT_ABS(2 * s * den_x)
 	// y = u1 * den_y
 	// t = x * y
-	var out edwards25519.ExtendedGroupElement
+	var out edwards25519.ProjP3
 	out.X.Mul(radix51.Two, s).Mul(&out.X, denX).Abs(&out.X)
 	out.Y.Mul(u1, denY)
 	out.Z.One()
