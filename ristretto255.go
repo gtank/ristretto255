@@ -3,8 +3,13 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Package ristretto255 implements the ristretto255 prime-order group as
-// specified in draft-hdevalence-cfrg-ristretto-00.
+// Package ristretto255 implements the group of prime order
+//
+//     2**252 + 27742317777372353535851937790883648493
+//
+// as specified in draft-hdevalence-cfrg-ristretto-01.
+//
+// All operations are constant time unless otherwise specified.
 package ristretto255
 
 import (
@@ -13,6 +18,7 @@ import (
 
 	"github.com/gtank/ristretto255/internal/edwards25519"
 	"github.com/gtank/ristretto255/internal/radix51"
+	"github.com/gtank/ristretto255/internal/scalar"
 )
 
 var (
@@ -33,12 +39,13 @@ var (
 // Element is an element of the ristretto255 prime-order group.
 //
 // The zero value of Element is not valid, but can be used as the receiver for
-// any operation.
+// any setting operation.
 type Element struct {
 	r edwards25519.ProjP3
 }
 
 // Equal returns 1 if e is equivalent to ee, and 0 otherwise.
+//
 // Note that Elements must not be compared in any other way.
 func (e *Element) Equal(ee *Element) int {
 	var f0, f1 radix51.FieldElement
@@ -55,9 +62,9 @@ func (e *Element) Equal(ee *Element) int {
 }
 
 // FromUniformBytes maps the 64-byte slice b to e uniformly and
-// deterministically. This can be used for hash-to-group operations or to obtain
-// a random element.
-func (e *Element) FromUniformBytes(b []byte) {
+// deterministically, and returns e. This can be used for hash-to-group
+// operations or to obtain a random element.
+func (e *Element) FromUniformBytes(b []byte) *Element {
 	if len(b) != 64 {
 		panic("ristretto255: FromUniformBytes: input is not 64 bytes long")
 	}
@@ -72,7 +79,7 @@ func (e *Element) FromUniformBytes(b []byte) {
 	point2 := &Element{}
 	mapToPoint(&point2.r, f)
 
-	e.Add(point1, point2)
+	return e.Add(point1, point2)
 }
 
 // mapToPoint implements MAP from Section 3.2.4 of draft-hdevalence-cfrg-ristretto-00.
@@ -136,7 +143,8 @@ func mapToPoint(out *edwards25519.ProjP3, t *radix51.FieldElement) {
 	out.T.Mul(w0, w2)
 }
 
-// Encode appends the canonical encoding of e to b and returns the result.
+// Encode appends the 32 bytes canonical encoding of e to b
+// and returns the result.
 func (e *Element) Encode(b []byte) []byte {
 	tmp := &radix51.FieldElement{}
 
@@ -195,8 +203,8 @@ func (e *Element) Encode(b []byte) []byte {
 	return s.Bytes(b)
 }
 
-// Decode sets e to the decoded value of in. If in is not a canonical encoding,
-// Decode returns an error, and the receiver is unchanged.
+// Decode sets e to the decoded value of in. If in is not a 32 byte canonical
+// encoding, Decode returns an error, and the receiver is unchanged.
 func (e *Element) Decode(in []byte) error {
 	if len(in) != 32 {
 		return errInvalidEncoding
@@ -266,26 +274,88 @@ func (e *Element) Decode(in []byte) error {
 	return nil
 }
 
-// Add sets v = p + q, and returns v.
-func (v *Element) Add(p, q *Element) *Element {
-	v.r.Add(&p.r, &q.r)
-	return v
+// ScalarBaseMult sets e = s * B, where B is the canonical generator, and returns e.
+func (e *Element) ScalarBaseMult(s *Scalar) *Element {
+	e.r.BasepointMul(&s.s)
+	return e
 }
 
-// Sub sets v = p - q, and returns v.
-func (v *Element) Sub(p, q *Element) *Element {
-	v.r.Sub(&p.r, &q.r)
-	return v
+// ScalarMult sets e = s * p, and returns e.
+func (e *Element) ScalarMult(s *Scalar, p *Element) *Element {
+	e.r.ScalarMul(&s.s, &p.r)
+	return e
 }
 
-// Neg sets v = -p, and returns v.
-func (v *Element) Neg(p *Element) *Element {
-	v.r.Neg(&p.r)
-	return v
+// MultiScalarMult sets e = sum(s[i] * p[i]), and returns e.
+//
+// Execution time depends only on the lengths of the two slices, which must match.
+func (e *Element) MultiScalarMult(s []*Scalar, p []*Element) *Element {
+	if len(p) != len(s) {
+		panic("ristretto255: MultiScalarMult invoked with mismatched slice lengths")
+	}
+	points := make([]*edwards25519.ProjP3, len(p))
+	scalars := make([]scalar.Scalar, len(s))
+	for i := range s {
+		points[i] = &p[i].r
+		scalars[i] = s[i].s
+	}
+	e.r.MultiscalarMul(scalars, points)
+	return e
 }
 
-// Zero sets v to the identity element of the group, and returns v.
-func (v *Element) Zero() *Element {
-	v.r.Zero()
-	return v
+// VarTimeMultiScalarMult sets e = sum(s[i] * p[i]), and returns e.
+//
+// Execution time depends on the inputs.
+func (e *Element) VarTimeMultiScalarMult(s []*Scalar, p []*Element) *Element {
+	if len(p) != len(s) {
+		panic("ristretto255: MultiScalarMult invoked with mismatched slice lengths")
+	}
+	points := make([]*edwards25519.ProjP3, len(p))
+	scalars := make([]scalar.Scalar, len(s))
+	for i := range s {
+		points[i] = &p[i].r
+		scalars[i] = s[i].s
+	}
+	e.r.VartimeMultiscalarMul(scalars, points)
+	return e
+}
+
+// VarTimeDoubleScalarBaseMult sets e = a * A + b * B, where B is the canonical
+// generator, and returns e.
+//
+// Execution time depends on the inputs.
+func (e *Element) VarTimeDoubleScalarBaseMult(a *Scalar, A *Element, b *Scalar) *Element {
+	e.r.VartimeDoubleBaseMul(&a.s, &A.r, &b.s)
+	return e
+}
+
+// Add sets e = p + q, and returns e.
+func (e *Element) Add(p, q *Element) *Element {
+	e.r.Add(&p.r, &q.r)
+	return e
+}
+
+// Sub sets e = p - q, and returns e.
+func (e *Element) Sub(p, q *Element) *Element {
+	e.r.Sub(&p.r, &q.r)
+	return e
+}
+
+// Neg sets e = -p, and returns e.
+func (e *Element) Neg(p *Element) *Element {
+	e.r.Neg(&p.r)
+	return e
+}
+
+// Zero sets e to the identity element of the group, and returns e.
+func (e *Element) Zero() *Element {
+	e.r.Zero()
+	return e
+}
+
+// Base sets e to the canonical generator specified in
+// draft-hdevalence-cfrg-ristretto-01, Section 3.
+func (e *Element) Base() *Element {
+	e.r.Set(&edwards25519.B)
+	return e
 }
