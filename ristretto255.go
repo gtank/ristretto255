@@ -21,6 +21,7 @@ import (
 	"github.com/gtank/ristretto255/internal/scalar"
 )
 
+// Constants from draft-hdevalence-cfrg-ristretto-01, Section 3.1.
 var (
 	sqrtM1 = fieldElementFromDecimal(
 		"19681161376707505956807079304988542015446066515923890162744021073123829784752")
@@ -32,8 +33,6 @@ var (
 		"1159843021668779879193775521855586647937357759715417654439879720876111806838")
 	dMinusOneSQ = fieldElementFromDecimal(
 		"40440834346308536858101042469323190826248399146238708352240133220865137265952")
-
-	errInvalidEncoding = errors.New("invalid Ristretto encoding")
 )
 
 // Element is an element of the ristretto255 prime-order group.
@@ -202,6 +201,8 @@ func (e *Element) Encode(b []byte) []byte {
 	// Return the canonical little-endian encoding of s.
 	return s.Bytes(b)
 }
+
+var errInvalidEncoding = errors.New("invalid Ristretto encoding")
 
 // Decode sets e to the decoded value of in. If in is not a 32 byte canonical
 // encoding, Decode returns an error, and the receiver is unchanged.

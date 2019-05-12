@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/gtank/ristretto255/internal/edwards25519"
 	"github.com/gtank/ristretto255/internal/radix51"
 )
 
@@ -25,8 +24,8 @@ type sqrtRatioTest struct {
 	negative int
 }
 
-// These tests can be found in curve25519-dalek's 'field.rs'
 func TestSqrtRatioM1(t *testing.T) {
+	// These tests can be found in curve25519-dalek's 'field.rs'
 	var (
 		zero, one = radix51.Zero, radix51.One
 
@@ -66,18 +65,8 @@ func TestSqrtRatioM1(t *testing.T) {
 	}
 }
 
-var (
-	// The encoding of Ristretto element that can be represented internally by the Curve25519 base point.
-	compressedRistrettoBasepoint, _ = hex.DecodeString("e2f2ae0a6abc4e71a884a961c500515f58e30b6aa582dd8db6a65945e08d2d76")
-
-	// The representative Ristretto basepoint in extended coordinates.
-	ristrettoBasepoint = Element{r: edwards25519.ProjP3{
-		X: radix51.FieldElement([5]uint64{426475514619346, 2063872706840040, 14628272888959, 107677749330612, 288339085807592}),
-		Y: radix51.FieldElement([5]uint64{1934594822876571, 2049809580636559, 1991994783322914, 1758681962032007, 380046701118659}),
-		Z: radix51.FieldElement([5]uint64{1, 0, 0, 0, 0}),
-		T: radix51.FieldElement([5]uint64{410445769351754, 2235400917701188, 1495825632738689, 1351628537510093, 430502003771208}),
-	}}
-)
+// The encoding of the canonical generator.
+var compressedRistrettoBasepoint, _ = hex.DecodeString("e2f2ae0a6abc4e71a884a961c500515f58e30b6aa582dd8db6a65945e08d2d76")
 
 func TestRistrettoBasepointRoundTrip(t *testing.T) {
 	decodedBasepoint := &Element{}
@@ -86,7 +75,8 @@ func TestRistrettoBasepointRoundTrip(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if decodedBasepoint.Equal(&ristrettoBasepoint) != 1 {
+	ristrettoBasepoint := (&Element{}).Base()
+	if decodedBasepoint.Equal(ristrettoBasepoint) != 1 {
 		t.Error("decode succeeded, but got wrong point")
 	}
 
@@ -128,8 +118,8 @@ func TestRistrettoSmallMultiplesTestVectors(t *testing.T) {
 		"e0c418f7c8d9c4cdd7395b93ea124f3ad99021bb681dfc3302a9d99a2e53e64e",
 	}
 
-	basepointMultiple := Element{}
-	basepointMultiple.Zero()
+	basepointMultiple := (&Element{}).Zero()
+	ristrettoBasepoint := (&Element{}).Base()
 
 	for i := range testVectors {
 		// Grab the bytes of the encoding
@@ -160,7 +150,7 @@ func TestRistrettoSmallMultiplesTestVectors(t *testing.T) {
 		}
 
 		// Ensure basepointMultiple = i * B in the next iteration
-		basepointMultiple.Add(&basepointMultiple, &ristrettoBasepoint)
+		basepointMultiple.Add(basepointMultiple, ristrettoBasepoint)
 	}
 }
 
