@@ -355,7 +355,7 @@ func (e *Element) Zero() *Element {
 }
 
 // Base sets e to the canonical generator specified in
-// draft-hdevalence-cfrg-ristretto-01, Section 3.
+// draft-hdevalence-cfrg-ristretto-01, Section 3, and returns e.
 func (e *Element) Base() *Element {
 	e.r.Set(&edwards25519.B)
 	return e
