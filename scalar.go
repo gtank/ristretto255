@@ -45,6 +45,14 @@ func (s *Scalar) Multiply(x, y *Scalar) *Scalar {
 	return s
 }
 
+// Invert sets s = 1 / x such that s * x = 1 mod l and returns s.
+//
+// If x is 0, the result is undefined.
+func (s *Scalar) Invert(x *Scalar) *Scalar {
+	s.s.Inv(&x.s)
+	return s
+}
+
 // FromUniformBytes sets s to an uniformly distributed value given 64 uniformly
 // distributed random bytes.
 func (s *Scalar) FromUniformBytes(x []byte) *Scalar {
