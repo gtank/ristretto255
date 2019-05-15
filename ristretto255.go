@@ -36,11 +36,13 @@ var (
 )
 
 // Element is an element of the ristretto255 prime-order group.
-//
-// The zero value of Element is not valid, but can be used as the receiver for
-// any setting operation.
 type Element struct {
 	r edwards25519.ProjP3
+}
+
+// NewElement returns a new Element set to the identity value.
+func NewElement() *Element {
+	return (&Element{}).Zero()
 }
 
 // Equal returns 1 if e is equivalent to ee, and 0 otherwise.

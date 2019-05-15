@@ -16,6 +16,11 @@ type Scalar struct {
 	s scalar.Scalar
 }
 
+// NewScalar returns a Scalar set to the value 0.
+func NewScalar() *Scalar {
+	return (&Scalar{}).Zero()
+}
+
 // Add sets s = x + y mod l and returns s.
 func (s *Scalar) Add(x, y *Scalar) *Scalar {
 	s.s.Add(&x.s, &y.s)
