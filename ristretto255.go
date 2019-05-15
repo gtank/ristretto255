@@ -338,14 +338,14 @@ func (e *Element) Add(p, q *Element) *Element {
 	return e
 }
 
-// Sub sets e = p - q, and returns e.
-func (e *Element) Sub(p, q *Element) *Element {
+// Subtract sets e = p - q, and returns e.
+func (e *Element) Subtract(p, q *Element) *Element {
 	e.r.Sub(&p.r, &q.r)
 	return e
 }
 
-// Neg sets e = -p, and returns e.
-func (e *Element) Neg(p *Element) *Element {
+// Negate sets e = -p, and returns e.
+func (e *Element) Negate(p *Element) *Element {
 	e.r.Neg(&p.r)
 	return e
 }

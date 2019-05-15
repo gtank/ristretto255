@@ -27,20 +27,20 @@ func (s *Scalar) Add(x, y *Scalar) *Scalar {
 	return s
 }
 
-// Sub sets s = x - y mod l and returns s.
-func (s *Scalar) Sub(x, y *Scalar) *Scalar {
+// Subtract sets s = x - y mod l and returns s.
+func (s *Scalar) Subtract(x, y *Scalar) *Scalar {
 	s.s.Sub(&x.s, &y.s)
 	return s
 }
 
-// Neg sets s = -x mod l and returns s.
-func (s *Scalar) Neg(x *Scalar) *Scalar {
+// Negate sets s = -x mod l and returns s.
+func (s *Scalar) Negate(x *Scalar) *Scalar {
 	s.s.Neg(&x.s)
 	return s
 }
 
-// Mul sets s = x * y mod l and returns s.
-func (s *Scalar) Mul(x, y *Scalar) *Scalar {
+// Multiply sets s = x * y mod l and returns s.
+func (s *Scalar) Multiply(x, y *Scalar) *Scalar {
 	s.s.Mul(&x.s, &y.s)
 	return s
 }
