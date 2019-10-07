@@ -5,6 +5,7 @@
 package ristretto255
 
 import (
+	"encoding/base64"
 	"github.com/gtank/ristretto255/internal/scalar"
 )
 
@@ -81,4 +82,25 @@ func (s *Scalar) Equal(u *Scalar) int {
 func (s *Scalar) Zero() *Scalar {
 	s.s = scalar.Scalar{}
 	return s
+}
+
+// MarshalText implements encoding/TextMarshaler interface
+func (s *Scalar) MarshalText() (text []byte, err error) {
+	b := s.Encode([]byte{})
+	return []byte(base64.StdEncoding.EncodeToString(b)), nil
+}
+
+// UnmarshalText implements encoding/TextMarshaler interface
+func (s *Scalar) UnmarshalText(text []byte) error {
+	sb, err := base64.StdEncoding.DecodeString(string(text))
+	if err == nil {
+		return s.Decode(sb)
+	}
+	return err
+}
+
+// String implements the Stringer interface
+func (s *Scalar) String() string {
+	result, _ := s.MarshalText()
+	return string(result)
 }

@@ -14,6 +14,7 @@ package ristretto255
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
 
 	"github.com/gtank/ristretto255/internal/edwards25519"
@@ -361,4 +362,25 @@ func (e *Element) Zero() *Element {
 func (e *Element) Base() *Element {
 	e.r.Set(&edwards25519.B)
 	return e
+}
+
+// MarshalText implements encoding/TextMarshaler interface
+func (e *Element) MarshalText() (text []byte, err error) {
+	b := e.Encode([]byte{})
+	return []byte(base64.StdEncoding.EncodeToString(b)), nil
+}
+
+// UnmarshalText implements encoding/TextMarshaler interface
+func (e *Element) UnmarshalText(text []byte) error {
+	eb, err := base64.StdEncoding.DecodeString(string(text))
+	if err == nil {
+		return e.Decode(eb)
+	}
+	return err
+}
+
+// String implements the Stringer interface
+func (e *Element) String() string {
+	result, _ := e.MarshalText()
+	return string(result)
 }

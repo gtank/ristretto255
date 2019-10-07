@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha512"
 	"encoding/hex"
+	"encoding/json"
 	"testing"
 
 	"github.com/gtank/ristretto255/internal/radix51"
@@ -238,5 +239,39 @@ func TestRistrettoFromUniformBytesTestVectors(t *testing.T) {
 		if encoding := hex.EncodeToString(element.Encode(nil)); encoding != elements[i] {
 			t.Errorf("#%d: expected %q, got %q", i, elements[i], encoding)
 		}
+	}
+}
+
+func TestMarshalScalar(t *testing.T) {
+	x := new(Scalar)
+	// generate an arbitrary scalar
+	xbytes := sha512.Sum512([]byte("Hello World"))
+	x.FromUniformBytes(xbytes[:])
+	text, err := json.Marshal(x)
+	if err != nil {
+		t.Fatalf("Could not marshal json: %v", err)
+	}
+	t.Logf("json: %s", text)
+	y := new(Scalar)
+	err = json.Unmarshal(text, y)
+	if err != nil || y.Equal(x) == 0 {
+		t.Fatalf("Error unmarshaling scalar from json: %s %v", text, err)
+	}
+}
+
+func TestMarshalElement(t *testing.T) {
+	x := new(Element)
+	// generate an arbitrary element
+	xbytes := sha512.Sum512([]byte("Hello World"))
+	x.FromUniformBytes(xbytes[:])
+	text, err := json.Marshal(x)
+	if err != nil {
+		t.Fatalf("Could not marshal json: %v", err)
+	}
+	t.Logf("json: %s", text)
+	y := new(Element)
+	err = json.Unmarshal(text, y)
+	if err != nil || y.Equal(x) == 0 {
+		t.Fatalf("Error unmarshaling element from json: %s %v", text, err)
 	}
 }
