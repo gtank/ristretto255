@@ -49,11 +49,12 @@ func TestSqrtRatioM1(t *testing.T) {
 	assertFeEqual(new(radix51.FieldElement).Mul(new(radix51.FieldElement).Square(invSqrt4), four), one)
 
 	var tests = []sqrtRatioTest{
-		{u: zero, v: zero, sqrt: zero, choice: 1, negative: 0},    // 0
-		{u: one, v: zero, sqrt: zero, choice: 0, negative: 0},     // 1
-		{u: two, v: one, sqrt: sqrt2i, choice: 0, negative: 0},    // 2
-		{u: four, v: one, sqrt: two, choice: 1, negative: 0},      // 3
-		{u: one, v: four, sqrt: invSqrt4, choice: 1, negative: 0}, // 4
+		{u: zero, v: zero, sqrt: zero, choice: 1, negative: 0},
+		{u: zero, v: one, sqrt: zero, choice: 1, negative: 0},
+		{u: one, v: zero, sqrt: zero, choice: 0, negative: 0},
+		{u: two, v: one, sqrt: sqrt2i, choice: 0, negative: 0},
+		{u: four, v: one, sqrt: two, choice: 1, negative: 0},
+		{u: one, v: four, sqrt: invSqrt4, choice: 1, negative: 0},
 	}
 
 	for idx, tt := range tests {
@@ -238,6 +239,33 @@ func TestRistrettoFromUniformBytesTestVectors(t *testing.T) {
 		element.FromUniformBytes(hash[:])
 		if encoding := hex.EncodeToString(element.Encode(nil)); encoding != elements[i] {
 			t.Errorf("#%d: expected %q, got %q", i, elements[i], encoding)
+		}
+	}
+}
+
+func TestEquivalentFromUniformBytes(t *testing.T) {
+	inputs := []string{
+		"edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
+			"1200000000000000000000000000000000000000000000000000000000000000",
+		"edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f" +
+			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+		"0000000000000000000000000000000000000000000000000000000000000080" +
+			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+		"0000000000000000000000000000000000000000000000000000000000000000" +
+			"1200000000000000000000000000000000000000000000000000000000000080",
+	}
+	expected := "304282791023b73128d277bdcb5c7746ef2eac08dde9f2983379cb8e5ef0517f"
+
+	var element Element
+	for i, input := range inputs {
+		h, err := hex.DecodeString(input)
+		if err != nil {
+			t.Fatalf("#%d: bad hex encoding in test vector: %v", i, err)
+		}
+
+		element.FromUniformBytes(h[:])
+		if encoding := hex.EncodeToString(element.Encode(nil)); encoding != expected {
+			t.Errorf("#%d: expected %q, got %q", i, expected, encoding)
 		}
 	}
 }
