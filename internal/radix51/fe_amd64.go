@@ -22,10 +22,14 @@ var useBMI2 bool
 func feMulAmd64(out, a, b *FieldElement, useBMI2 bool)
 
 //go:noescape
-func feSquare(out, x *FieldElement)
+func feSquareAmd64(out, x *FieldElement, useBMI2 bool)
 
 func feMul(out, a, b *FieldElement) {
 	feMulAmd64(out, a, b, useBMI2)
+}
+
+func feSquare(out, x *FieldElement) {
+	feSquareAmd64(out, x, useBMI2)
 }
 
 func init() {
