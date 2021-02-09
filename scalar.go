@@ -23,7 +23,7 @@ func NewScalar() *Scalar {
 	return (&Scalar{}).Zero()
 }
 
-// Set sets the value of e to x and returns e.
+// Set sets the value of s to x and returns s.
 func (s *Scalar) Set(x *Scalar) *Scalar {
 	*s = *x
 	return s
