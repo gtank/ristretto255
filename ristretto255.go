@@ -46,6 +46,12 @@ func NewElement() *Element {
 	return (&Element{}).Zero()
 }
 
+// Set sets the value of e to x and returns e.
+func (e *Element) Set(x *Element) *Element {
+	*e = *x
+	return e
+}
+
 // Equal returns 1 if e is equivalent to ee, and 0 otherwise.
 //
 // Note that Elements must not be compared in any other way.
