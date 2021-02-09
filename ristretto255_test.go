@@ -303,3 +303,62 @@ func TestMarshalElement(t *testing.T) {
 		t.Fatalf("Error unmarshaling element from json: %s %v", text, err)
 	}
 }
+
+func TestElementSet(t *testing.T) {
+	// Test this, because the internal point type being hard-copyable isn't part of the spec.
+
+	el1 := NewElement().Zero()
+	el2 := NewElement().Base()
+
+	if el1.Equal(el2) == 1 {
+		t.Error("shouldn't be the same")
+	}
+
+	// Check new value
+	el1.Set(el2)
+
+	if el1.Equal(el2) == 0 {
+		t.Error("failed to set the value")
+	}
+
+	// Mutate source var
+	el2.Add(el2, el2)
+
+	if el1.Equal(el2) == 1 {
+		t.Error("shouldn't have changed")
+	}
+}
+
+func TestScalarSet(t *testing.T) {
+	// Test this, because the internal scalar representation being hard-copyable isn't part of the spec.
+
+	// 32-byte little endian value of "1"
+	scOne := make([]byte, 32)
+	scOne[0] = 0x01
+
+	sc1, sc2 := NewScalar(), NewScalar().Zero()
+
+	// sc1 <- 1
+	sc1.Decode(scOne)
+
+	// 1 != 0
+	if sc1.Equal(sc2) == 1 {
+		t.Error("shouldn't be the same")
+	}
+
+	// sc2 <- sc1
+	sc2.Set(sc1)
+
+	// 1 == 1
+	if sc1.Equal(sc2) == 0 {
+		t.Error("failed to set the value")
+	}
+
+	// sc1 <- 1 + 1
+	sc1.Add(sc1, sc1)
+
+	// 2 != 1
+	if sc1.Equal(sc2) == 1 {
+		t.Error("shouldn't have changed")
+	}
+}

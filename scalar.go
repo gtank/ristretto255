@@ -6,6 +6,7 @@ package ristretto255
 
 import (
 	"encoding/base64"
+
 	"github.com/gtank/ristretto255/internal/scalar"
 )
 
@@ -20,6 +21,12 @@ type Scalar struct {
 // NewScalar returns a Scalar set to the value 0.
 func NewScalar() *Scalar {
 	return (&Scalar{}).Zero()
+}
+
+// Set sets the value of s to x and returns s.
+func (s *Scalar) Set(x *Scalar) *Scalar {
+	*s = *x
+	return s
 }
 
 // Add sets s = x + y mod l and returns s.
