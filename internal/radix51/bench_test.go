@@ -38,3 +38,12 @@ func BenchmarkMul32(b *testing.B) {
 		x.Mul32(&x, 0xaa42aa42)
 	}
 }
+
+func BenchmarkSquare(b *testing.B) {
+	var x radix51.FieldElement
+	x.Add(radix51.One, radix51.One)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		x.Square(&x)
+	}
+}
