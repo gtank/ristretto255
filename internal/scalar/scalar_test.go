@@ -6,6 +6,7 @@ package scalar
 
 import (
 	"bytes"
+	crand "crypto/rand"
 	"math/big"
 	"testing"
 	"testing/quick"
@@ -133,5 +134,33 @@ func TestInvert(t *testing.T) {
 
 	if err := quick.Check(invertWorks, quickCheckConfig); err != nil {
 		t.Error(err)
+	}
+}
+
+func BenchmarkScalarAddition(b *testing.B) {
+	var rnd [128]byte
+	crand.Read(rnd[:])
+	s1 := (&Scalar{}).FromUniformBytes(rnd[0:64])
+	s2 := (&Scalar{}).FromUniformBytes(rnd[64:128])
+	t := &Scalar{}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		t.Add(s1, s2)
+	}
+}
+
+func BenchmarkScalarMultiplication(b *testing.B) {
+	var rnd [128]byte
+	crand.Read(rnd[:])
+	s1 := (&Scalar{}).FromUniformBytes(rnd[0:64])
+	s2 := (&Scalar{}).FromUniformBytes(rnd[64:128])
+	t := &Scalar{}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		t.Mul(s1, s2)
 	}
 }
