@@ -133,7 +133,7 @@ func (e *Element) FromUniformBytes(b []byte) *Element {
 	return e
 }
 
-// SetUniformBytes deterministically sets e to an uniformly distributed value
+// SetUniformBytes deterministically sets e to a uniformly distributed value
 // given 64 uniformly distributed random bytes.
 //
 // This can be used for hash-to-group operations or to obtain a random element.
