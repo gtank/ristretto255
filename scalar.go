@@ -64,7 +64,7 @@ func (s *Scalar) Invert(x *Scalar) *Scalar {
 	return s
 }
 
-// FromUniformBytes sets s to an uniformly distributed value given 64 uniformly
+// FromUniformBytes sets s to a uniformly distributed value given 64 uniformly
 // distributed random bytes.
 //
 // Deprecated: use SetUniformBytes. This API will be removed before v1.0.0.
@@ -75,7 +75,7 @@ func (s *Scalar) FromUniformBytes(x []byte) *Scalar {
 	return s
 }
 
-// SetUniformBytes sets s to an uniformly distributed value given 64 uniformly
+// SetUniformBytes sets s to a uniformly distributed value given 64 uniformly
 // distributed random bytes by interpreting the 64-byte string as a 512-bit
 // unsigned integer in little-endian order and reducing the integer modulo l.
 //
