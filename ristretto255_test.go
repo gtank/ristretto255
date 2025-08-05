@@ -37,11 +37,8 @@ func TestRistrettoBasepointRoundTrip(t *testing.T) {
 	}
 }
 
-func TestRistrettoRandomRoundtrip(t *testing.T) {
-	// TODO quickcheck
-}
-
 func TestRistrettoSmallMultiplesTestVectors(t *testing.T) {
+	// From RFC 9496, Appendix A.1.
 	var testVectors = [16]string{
 		// This is the identity point
 		"0000000000000000000000000000000000000000000000000000000000000000",
@@ -101,6 +98,7 @@ func TestRistrettoSmallMultiplesTestVectors(t *testing.T) {
 }
 
 func TestRistrettoBadEncodingsTestVectors(t *testing.T) {
+	// From RFC 9496, Appendix A.2.
 	var testVectors = []string{
 		// These are all bad because they're non-canonical field encodings.
 		"00ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
@@ -158,6 +156,7 @@ func TestRistrettoBadEncodingsTestVectors(t *testing.T) {
 }
 
 func TestRistrettoFromUniformBytesTestVectors(t *testing.T) {
+	// From RFC 9496, Appendix A.3, except the RFC published the SHA-512 images.
 	inputs := []string{
 		"Ristretto is traditionally a short shot of espresso coffee",
 		"made with the normal amount of ground coffee but extracted with",
@@ -188,6 +187,7 @@ func TestRistrettoFromUniformBytesTestVectors(t *testing.T) {
 }
 
 func TestEquivalentFromUniformBytes(t *testing.T) {
+	// From RFC 9496, Appendix A.3.
 	inputs := []string{
 		"edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" +
 			"1200000000000000000000000000000000000000000000000000000000000000",
@@ -308,7 +308,7 @@ func TestScalarSet(t *testing.T) {
 }
 
 func TestConstants(t *testing.T) {
-	// From draft-hdevalence-cfrg-ristretto-01, Section 3.1.
+	// From RFC 9496, Section 4.1.
 	t.Run("d", func(t *testing.T) {
 		testConstant(t, d,
 			"37095705934669439343138083508754565189542113879843219016388785533085940283555")
