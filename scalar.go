@@ -12,9 +12,9 @@ import (
 )
 
 // A Scalar is an element of the ristretto255 scalar field, as specified in
-// draft-hdevalence-cfrg-ristretto-01, Section 3.4. That is, an integer modulo
+// RFC 9496, Section 4.4. That is, an integer modulo
 //
-//     l = 2^252 + 27742317777372353535851937790883648493
+//	l = 2^252 + 27742317777372353535851937790883648493
 //
 // The zero value is a valid zero element.
 type Scalar struct {
@@ -76,8 +76,11 @@ func (s *Scalar) FromUniformBytes(x []byte) *Scalar {
 }
 
 // SetUniformBytes sets s to an uniformly distributed value given 64 uniformly
-// distributed random bytes. If x is not of the right length, SetUniformBytes
-// returns nil and an error, and the receiver is unchanged.
+// distributed random bytes by interpreting the 64-byte string as a 512-bit
+// unsigned integer in little-endian order and reducing the integer modulo l.
+//
+// If x is not of the right length, SetUniformBytes returns nil and an error,
+// and the receiver is unchanged.
 func (s *Scalar) SetUniformBytes(x []byte) (*Scalar, error) {
 	if _, err := s.s.SetUniformBytes(x); err != nil {
 		return nil, errors.New("ristretto255: SetUniformBytes input is not 64 bytes long")
@@ -114,7 +117,7 @@ func (s *Scalar) Encode(b []byte) []byte {
 	return ret
 }
 
-// Bytes returns the 32 bytes little-endian encoding of s.
+// Bytes returns the 32 bytes little-endian canonical encoding of s.
 func (s *Scalar) Bytes() []byte {
 	return s.s.Bytes()
 }

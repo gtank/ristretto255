@@ -5,9 +5,9 @@
 
 // Package ristretto255 implements the group of prime order
 //
-//     2**252 + 27742317777372353535851937790883648493
+//	2**252 + 27742317777372353535851937790883648493
 //
-// as specified in draft-hdevalence-cfrg-ristretto-01.
+// and its scalar field, as specified in RFC 9496, Section 4.
 //
 // All operations are constant time unless otherwise specified.
 package ristretto255
@@ -21,8 +21,8 @@ import (
 	"filippo.io/edwards25519/field"
 )
 
-// Constants from draft-hdevalence-cfrg-ristretto-01, Section 3.1. See
-// TestConstants for their decimal values.
+// Constants from RFC 9496, Section 4.1.
+// See TestConstants for their decimal values.
 var (
 	d, _ = new(field.Element).SetBytes([]byte{
 		0xa3, 0x78, 0x59, 0x13, 0xca, 0x4d, 0xeb, 0x75,
@@ -103,7 +103,7 @@ func (e *Element) Set(x *Element) *Element {
 
 // Equal returns 1 if e is equivalent to ee, and 0 otherwise.
 //
-// Note that Elements must not be compared in any other way.
+// Equal implements the Equals operation from RFC 9496, Section 4.3.3.
 func (e *Element) Equal(ee *Element) int {
 	X1, Y1, _, _ := e.r.ExtendedCoordinates()
 	X2, Y2, _, _ := ee.r.ExtendedCoordinates()
@@ -137,6 +137,9 @@ func (e *Element) FromUniformBytes(b []byte) *Element {
 // given 64 uniformly distributed random bytes.
 //
 // This can be used for hash-to-group operations or to obtain a random element.
+//
+// SetUniformBytes implements the Element Derivation operation from RFC 9496,
+// Section 4.3.4.
 func (e *Element) SetUniformBytes(b []byte) (*Element, error) {
 	if len(b) != 64 {
 		return nil, errors.New("ristretto255: SetUniformBytes input is not 64 bytes long")
@@ -246,6 +249,8 @@ func sliceForAppend(in []byte, n int) (head, tail []byte) {
 }
 
 // Bytes returns the 32 bytes canonical encoding of e.
+//
+// Bytes implements the Encode operation from RFC 9496, Section 4.3.2.
 func (e *Element) Bytes() []byte {
 	// Bytes is outlined to let the allocation happen on the stack of the caller.
 	b := make([]byte, 32)
@@ -327,6 +332,8 @@ func (e *Element) Decode(in []byte) error {
 // SetCanonicalBytes sets e to the decoded value of in. If in is not a canonical
 // encoding of s, SetCanonicalBytes returns nil and an error and the receiver is
 // unchanged.
+//
+// SetCanonicalBytes implements the Decode operation from RFC 9496, Section 4.3.1.
 func (e *Element) SetCanonicalBytes(in []byte) (*Element, error) {
 	if len(in) != 32 {
 		return nil, errInvalidEncoding
@@ -477,8 +484,7 @@ func (e *Element) Zero() *Element {
 	return e.Set(NewIdentityElement())
 }
 
-// Base sets e to the canonical generator specified in
-// draft-hdevalence-cfrg-ristretto-01, Section 3, and returns e.
+// Base sets e to the canonical generator, and returns e.
 //
 // Deprecated: use NewGeneratorElement and Set. This API will be removed before v1.0.0.
 func (e *Element) Base() *Element {
