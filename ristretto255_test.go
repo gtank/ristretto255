@@ -3,11 +3,13 @@ package ristretto255
 import (
 	"bytes"
 	"crypto/sha512"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"math/big"
 	"testing"
 
+	"filippo.io/edwards25519"
 	"filippo.io/edwards25519/field"
 )
 
@@ -346,5 +348,46 @@ func testConstant(t *testing.T, f *field.Element, decimal string) {
 	}
 	if !bytes.Equal(f.Bytes(), buf) {
 		t.Errorf("expected %x", buf)
+	}
+}
+
+// Create a deterministic test element
+func elemFromCounter(t *testing.T, i uint64) *Element {
+	input := []byte("ristretto255 to edwards25519 conversion test:")
+	binary.LittleEndian.PutUint64(input, i)
+	hashed := sha512.Sum512(input)
+	e := NewIdentityElement()
+	if _, err := e.SetUniformBytes(hashed[:]); err != nil {
+		t.Fatalf("could not set uniform bytes: %v", err)
+	}
+	return e
+}
+
+func TestToEdwards25519PointIdentityElement(t *testing.T) {
+	e := NewIdentityElement()
+	p := e.ToEdwards25519Point()
+	if p.Equal(edwards25519.NewIdentityPoint()) != 1 {
+		t.Fatalf("identity element did not map to Edwards identity")
+	}
+}
+
+func TestToEdwards25519PointIsDeterministic(t *testing.T) {
+	e := elemFromCounter(t, 42)
+	p1 := e.ToEdwards25519Point()
+	p2 := e.ToEdwards25519Point()
+	if p1.Equal(p2) != 1 {
+		t.Fatalf("conversion not deterministic")
+	}
+}
+
+func TestToEdwards25519PointHasValidEncoding(t *testing.T) {
+	var i uint64
+	for i = 0; i < 64; i++ {
+		e := elemFromCounter(t, i)
+		p := e.ToEdwards25519Point()
+		// check that Bytes() produces a valid compressed Edwards point
+		if _, err := new(edwards25519.Point).SetBytes(p.Bytes()); err != nil {
+			t.Fatalf("Bytes() did not produce valid Ed25519 point (iter %d): %v", i, err)
+		}
 	}
 }

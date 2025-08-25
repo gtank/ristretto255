@@ -416,6 +416,28 @@ func (e *Element) ScalarMult(s *Scalar, p *Element) *Element {
 	return e
 }
 
+var eightInv, _ = edwards25519.NewScalar().SetCanonicalBytes([]byte{
+	121, 47, 220, 226, 41, 229, 6, 97,
+	208, 218, 28, 125, 179, 157, 211, 7,
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 6,
+})
+
+// Returns a birationally equivalent point on the edwards25519 curve.
+//
+// Since the element may not be of order 8, we cannot just return the bytes
+// for the underlying point.
+//
+// However, [8^{-1}][8]P is guaranteed to have a cleared cofactor.
+func (e *Element) ToEdwards25519Point() *edwards25519.Point {
+	p := edwards25519.NewIdentityPoint()
+	// this is the byte representation of 8^{-1} mod q
+	p.SetBytes(e.Bytes())
+	p.MultByCofactor(p)
+	p.ScalarMult(eightInv, p)
+	return p
+}
+
 // MultiScalarMult sets e = sum(s[i] * p[i]), and returns e.
 //
 // Execution time depends only on the lengths of the two slices, which must match.
