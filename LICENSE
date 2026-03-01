@@ -1,3 +1,4 @@
+Copyright (c) 2021 guanlong huang
 Copyright (c) 2009 The Go Authors. All rights reserved.
 Copyright (c) 2017 George Tankersley. All rights reserved.
 Copyright (c) 2019 Henry de Valence. All rights reserved.
@@ -10,7 +11,7 @@ met:
 notice, this list of conditions and the following disclaimer.
    * Redistributions in binary form must reproduce the above
 copyright notice, this list of conditions and the following disclaimer
-in the documentation and/or other materials provided with the
+in the documentation and/or other materials pr(ovided with the
 distribution.
    * Neither the name of Google Inc. nor the names of its
 contributors may be used to endorse or promote products derived from
